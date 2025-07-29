@@ -1,3 +1,7 @@
 node_modules/
 dist/
 build/
+token.json
+.vscode/
+oauth-credentials.json
+.env

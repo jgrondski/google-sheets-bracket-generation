@@ -1,4 +1,3 @@
-// createGoldBracket.js
 const { google } = require('googleapis');
 
 const TARGET_FOLDER_ID = '1een5NAkLEfU-DeZo-8SeSNNqooqlqiBD';
