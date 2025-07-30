@@ -1,26 +1,19 @@
 function generateBracketRequests(rounds, champion) {
   const requests = [];
 
+  // dimensions
   const cellHeight = 14;
   const nameWidth = 160;
   const sideWidth = 32;
 
+  // colors & formatting
   const gold = { red: 1, green: 0.8588, blue: 0.4627 };
   const black = { red: 0, green: 0, blue: 0 };
   const gray = { red: 0.192, green: 0.2039, blue: 0.2157 };
+  const font = { fontFamily: "Montserrat", bold: true };
+  const borderStyle = { style: "SOLID_MEDIUM", width: 2, color: gold };
 
-  const font = {
-    fontFamily: "Montserrat",
-    bold: true,
-  };
-
-  const borderStyle = {
-    style: "SOLID_MEDIUM",
-    width: 2,
-    color: gold,
-  };
-
-  // Fill background (A through T)
+  // fill background A–Y
   requests.push({
     repeatCell: {
       range: {
@@ -28,18 +21,15 @@ function generateBracketRequests(rounds, champion) {
         startRowIndex: 0,
         endRowIndex: 64,
         startColumnIndex: 0,
-        endColumnIndex: 20, // extend to column T
+        endColumnIndex: 25,
       },
-      cell: {
-        userEnteredFormat: { backgroundColor: gray },
-      },
+      cell: { userEnteredFormat: { backgroundColor: gray } },
       fields: "userEnteredFormat.backgroundColor",
     },
   });
 
-  let row = 1;
-
   // Round 1
+  let row = 1;
   for (const player of rounds[0]) {
     addNameGroup(
       requests,
@@ -71,84 +61,7 @@ function generateBracketRequests(rounds, champion) {
     );
     row += 8;
   }
-
-  // Connectors: Round 1 → 2
-  const eCol = 4,
-    fCol = 5,
-    gCol = 6;
-  row = 1;
-  for (let i = 0; i < rounds[1].length; i++) {
-    const topStart = row;
-    const bottomStart = row + 4;
-    const topMid = topStart + 1;
-    const bottomMid = bottomStart + 1;
-
-    for (let r = topMid; r < bottomMid; r++) {
-      requests.push({
-        updateBorders: {
-          range: {
-            sheetId: 0,
-            startRowIndex: r,
-            endRowIndex: r + 1,
-            startColumnIndex: eCol,
-            endColumnIndex: eCol + 1,
-          },
-          right: borderStyle,
-        },
-      });
-    }
-    requests.push({
-      updateBorders: {
-        range: {
-          sheetId: 0,
-          startRowIndex: topMid - 1,
-          endRowIndex: topMid,
-          startColumnIndex: eCol,
-          endColumnIndex: eCol + 1,
-        },
-        bottom: borderStyle,
-      },
-    });
-    requests.push({
-      updateBorders: {
-        range: {
-          sheetId: 0,
-          startRowIndex: topMid + 1,
-          endRowIndex: topMid + 2,
-          startColumnIndex: fCol,
-          endColumnIndex: fCol + 1,
-        },
-        bottom: borderStyle,
-      },
-    });
-    requests.push({
-      updateBorders: {
-        range: {
-          sheetId: 0,
-          startRowIndex: bottomMid - 1,
-          endRowIndex: bottomMid,
-          startColumnIndex: eCol,
-          endColumnIndex: eCol + 1,
-        },
-        bottom: borderStyle,
-        right: borderStyle,
-      },
-    });
-    const connectorRow12 = topMid + Math.floor((bottomMid - topMid) / 2) - 1;
-    requests.push({
-      updateBorders: {
-        range: {
-          sheetId: 0,
-          startRowIndex: connectorRow12,
-          endRowIndex: connectorRow12 + 1,
-          startColumnIndex: gCol,
-          endColumnIndex: gCol + 1,
-        },
-        bottom: borderStyle,
-      },
-    });
-    row += 8;
-  }
+  connectRounds(requests, rounds[1].length, 1, 4, 4, 5, 6, borderStyle);
 
   // Round 3
   row = 7;
@@ -166,86 +79,9 @@ function generateBracketRequests(rounds, champion) {
     );
     row += 16;
   }
+  connectRounds(requests, rounds[2].length, 3, 8, 9, 10, 11, borderStyle, 3);
 
-  // Connectors: Round 2 → 3
-  const jCol = 9,
-    kCol = 10,
-    lCol = 11;
-  row = 3;
-  for (let i = 0; i < rounds[2].length; i++) {
-    const topStart = row;
-    const bottomStart = row + 8;
-    const topMid = topStart + 1;
-    const bottomMid = bottomStart + 1;
-
-    for (let r = topMid; r < bottomMid; r++) {
-      requests.push({
-        updateBorders: {
-          range: {
-            sheetId: 0,
-            startRowIndex: r,
-            endRowIndex: r + 1,
-            startColumnIndex: jCol,
-            endColumnIndex: jCol + 1,
-          },
-          right: borderStyle,
-        },
-      });
-    }
-    requests.push({
-      updateBorders: {
-        range: {
-          sheetId: 0,
-          startRowIndex: topMid - 1,
-          endRowIndex: topMid,
-          startColumnIndex: jCol,
-          endColumnIndex: jCol + 1,
-        },
-        bottom: borderStyle,
-      },
-    });
-    requests.push({
-      updateBorders: {
-        range: {
-          sheetId: 0,
-          startRowIndex: topMid + 3,
-          endRowIndex: topMid + 4,
-          startColumnIndex: kCol,
-          endColumnIndex: kCol + 1,
-        },
-        bottom: borderStyle,
-      },
-    });
-    requests.push({
-      updateBorders: {
-        range: {
-          sheetId: 0,
-          startRowIndex: bottomMid - 1,
-          endRowIndex: bottomMid,
-          startColumnIndex: jCol,
-          endColumnIndex: jCol + 1,
-        },
-        bottom: borderStyle,
-        right: borderStyle,
-      },
-    });
-    const connectorRow23 = topMid + Math.floor((bottomMid - topMid) / 2) - 1;
-    requests.push({
-      updateBorders: {
-        range: {
-          sheetId: 0,
-          startRowIndex: connectorRow23,
-          endRowIndex: connectorRow23 + 1,
-          startColumnIndex: lCol,
-          endColumnIndex: lCol + 1,
-        },
-        bottom: borderStyle,
-      },
-    });
-    row += 16;
-  }
-
-  // Round 4 (Final before Championship)
+  // Round 4
   row = 15;
   for (const player of rounds[3]) {
     addNameGroup(
@@ -261,75 +97,323 @@ function generateBracketRequests(rounds, champion) {
     );
     row += 32;
   }
+  connectRounds(requests, rounds[3].length, 7, 16, 14, 15, 16, borderStyle, 7);
 
-  // Connectors: Round 3 → 4
-  const oCol = 14,
-    pCol = 15;
-  row = 7;
-  for (let i = 0; i < rounds[3].length; i++) {
-    const topStart = row;
-    const bottomStart = row + 16;
+  // Championship header (merge W26–29,X26–29 only)
+  requests.push({
+    mergeCells: {
+      range: {
+        sheetId: 0,
+        startRowIndex: 25,
+        endRowIndex: 29,
+        startColumnIndex: 22,
+        endColumnIndex: 24,
+      },
+      mergeType: "MERGE_ALL",
+    },
+  });
+  requests.push({
+    updateCells: {
+      rows: [
+        {
+          values: [
+            {
+              userEnteredValue: { stringValue: "Champion" },
+              userEnteredFormat: {
+                backgroundColor: gray,
+                horizontalAlignment: "CENTER",
+                verticalAlignment: "MIDDLE",
+                textFormat: {
+                  fontFamily: font.fontFamily,
+                  bold: true,
+                  fontSize: 26,
+                  foregroundColor: gold,
+                },
+              },
+            },
+          ],
+        },
+      ],
+      fields: "userEnteredValue,userEnteredFormat",
+      start: { rowIndex: 25, columnIndex: 22 },
+    },
+  });
+
+  // connector R4→Champ
+  connectRounds(requests, 1, 15, 32, 19, 20, 21, borderStyle, 7, true);
+  // bottom border on T at row 48 (index 47)
+  requests.push({
+    updateBorders: {
+      range: {
+        sheetId: 0,
+        startRowIndex: 47,
+        endRowIndex: 48,
+        startColumnIndex: 19,
+        endColumnIndex: 20,
+      },
+      bottom: borderStyle,
+    },
+  });
+  // bottom border on U at row 32 (index 31)
+  requests.push({
+    updateBorders: {
+      range: {
+        sheetId: 0,
+        startRowIndex: 31,
+        endRowIndex: 32,
+        startColumnIndex: 20,
+        endColumnIndex: 21,
+      },
+      bottom: borderStyle,
+    },
+  });
+
+  // Champion group
+  requests.push({
+    mergeCells: {
+      range: {
+        sheetId: 0,
+        startRowIndex: 29,
+        endRowIndex: 35,
+        startColumnIndex: 21,
+        endColumnIndex: 22,
+      },
+      mergeType: "MERGE_ALL",
+    },
+  });
+  requests.push({
+    mergeCells: {
+      range: {
+        sheetId: 0,
+        startRowIndex: 29,
+        endRowIndex: 35,
+        startColumnIndex: 22,
+        endColumnIndex: 24,
+      },
+      mergeType: "MERGE_ALL",
+    },
+  });
+  requests.push({
+    updateCells: {
+      rows: [
+        {
+          values: [
+            {
+              userEnteredValue: { numberValue: champion.seed },
+              userEnteredFormat: {
+                backgroundColor: gold,
+                horizontalAlignment: "CENTER",
+                verticalAlignment: "MIDDLE",
+                textFormat: {
+                  fontFamily: font.fontFamily,
+                  bold: true,
+                  fontSize: 34,
+                  foregroundColor: black,
+                },
+                borders: {
+                  top: borderStyle,
+                  bottom: borderStyle,
+                  left: borderStyle,
+                  right: borderStyle,
+                },
+              },
+            },
+          ],
+        },
+      ],
+      fields: "userEnteredValue,userEnteredFormat",
+      start: { rowIndex: 29, columnIndex: 21 },
+    },
+  });
+  requests.push({
+    updateCells: {
+      rows: [
+        {
+          values: [
+            {
+              userEnteredValue: { stringValue: champion.name },
+              userEnteredFormat: {
+                backgroundColor: black,
+                horizontalAlignment: "CENTER",
+                verticalAlignment: "MIDDLE",
+                textFormat: {
+                  fontFamily: font.fontFamily,
+                  bold: true,
+                  fontSize: 34,
+                  foregroundColor: gold,
+                },
+                borders: {
+                  top: borderStyle,
+                  bottom: borderStyle,
+                  left: borderStyle,
+                  right: borderStyle,
+                },
+              },
+            },
+          ],
+        },
+      ],
+      fields: "userEnteredValue,userEnteredFormat",
+      start: { rowIndex: 29, columnIndex: 22 },
+    },
+  });
+
+  // set dimensions
+  setDimensions(requests, cellHeight, sideWidth, nameWidth);
+  return requests;
+}
+
+function addNameGroup(
+  requests,
+  rowStart,
+  colStart,
+  player,
+  gold,
+  black,
+  gray,
+  font,
+  borderStyle
+) {
+  const positions = [
+    { value: { numberValue: player.seed }, bg: gold, fg: black, size: 11 },
+    { value: { stringValue: player.name }, bg: black, fg: gold, size: 12 },
+    { value: { numberValue: player.score }, bg: black, fg: gold, size: 11 },
+  ];
+  positions.forEach((pos, i) => {
+    requests.push({
+      mergeCells: {
+        range: {
+          sheetId: 0,
+          startRowIndex: rowStart,
+          endRowIndex: rowStart + 2,
+          startColumnIndex: colStart + i,
+          endColumnIndex: colStart + i + 1,
+        },
+        mergeType: "MERGE_ALL",
+      },
+    });
+  });
+  requests.push({
+    updateCells: {
+      rows: [
+        {
+          values: positions.map((pos) => ({
+            userEnteredValue: pos.value,
+            userEnteredFormat: {
+              backgroundColor: pos.bg,
+              horizontalAlignment: "CENTER",
+              verticalAlignment: "MIDDLE",
+              textFormat: {
+                fontFamily: font.fontFamily,
+                bold: true,
+                fontSize: pos.size,
+                foregroundColor: pos.fg,
+              },
+              borders: {
+                top: borderStyle,
+                bottom: borderStyle,
+                left: borderStyle,
+                right: borderStyle,
+              },
+            },
+          })),
+        },
+      ],
+      fields: "userEnteredValue,userEnteredFormat",
+      start: { rowIndex: rowStart, columnIndex: colStart },
+    },
+  });
+}
+
+function connectRounds(
+  requests,
+  count,
+  startRow,
+  gap,
+  colA,
+  colB,
+  colC,
+  borderStyle,
+  offset = 1,
+  single = false
+) {
+  let r = startRow;
+  for (let i = 0; i < count; i++) {
+    const topStart = r;
+    const bottomStart = r + gap;
     const topMid = topStart + 1;
     const bottomMid = bottomStart + 1;
-
-    for (let r = topMid; r < bottomMid; r++) {
+    for (let x = topMid; x < bottomMid; x++) {
       requests.push({
         updateBorders: {
           range: {
             sheetId: 0,
-            startRowIndex: r,
-            endRowIndex: r + 1,
-            startColumnIndex: oCol,
-            endColumnIndex: oCol + 1,
+            startRowIndex: x,
+            endRowIndex: x + 1,
+            startColumnIndex: colA,
+            endColumnIndex: colA + 1,
           },
           right: borderStyle,
         },
       });
     }
-    // Top bottom border on O
     requests.push({
       updateBorders: {
         range: {
           sheetId: 0,
           startRowIndex: topMid - 1,
           endRowIndex: topMid,
-          startColumnIndex: oCol,
-          endColumnIndex: oCol + 1,
+          startColumnIndex: colA,
+          endColumnIndex: colA + 1,
         },
         bottom: borderStyle,
       },
     });
-    // Bottom border on P (shift down 7 rows)
+    if (!single) {
+      requests.push({
+        updateBorders: {
+          range: {
+            sheetId: 0,
+            startRowIndex: bottomMid - 1,
+            endRowIndex: bottomMid,
+            startColumnIndex: colA,
+            endColumnIndex: colA + 1,
+          },
+          bottom: borderStyle,
+          right: borderStyle,
+        },
+      });
+      requests.push({
+        updateBorders: {
+          range: {
+            sheetId: 0,
+            startRowIndex: topMid + offset,
+            endRowIndex: topMid + offset + 1,
+            startColumnIndex: colB,
+            endColumnIndex: colB + 1,
+          },
+          bottom: borderStyle,
+        },
+      });
+    }
+    const mid = topMid + Math.floor((bottomMid - topMid) / 2) - 1;
     requests.push({
       updateBorders: {
         range: {
           sheetId: 0,
-          startRowIndex: topMid + 7,
-          endRowIndex: topMid + 8,
-          startColumnIndex: pCol,
-          endColumnIndex: pCol + 1,
+          startRowIndex: mid,
+          endRowIndex: mid + 1,
+          startColumnIndex: colC,
+          endColumnIndex: colC + 1,
         },
         bottom: borderStyle,
       },
     });
-    // Bottom+right on O bottom
-    requests.push({
-      updateBorders: {
-        range: {
-          sheetId: 0,
-          startRowIndex: bottomMid - 1,
-          endRowIndex: bottomMid,
-          startColumnIndex: oCol,
-          endColumnIndex: oCol + 1,
-        },
-        bottom: borderStyle,
-        right: borderStyle,
-      },
-    });
-    row += 32;
+    r += gap * (single ? 1 : 2);
   }
+}
 
-  // Set row heights
+function setDimensions(requests, cellHeight, sideWidth, nameWidth) {
   for (let r = 0; r < 64; r++) {
     requests.push({
       updateDimensionProperties: {
@@ -344,31 +428,8 @@ function generateBracketRequests(rounds, champion) {
       },
     });
   }
-
-  // Column widths (A through T)
-  const colIndices = {
-    A: 0,
-    B: 1,
-    C: 2,
-    D: 3,
-    E: 4,
-    F: 5,
-    G: 6,
-    H: 7,
-    I: 8,
-    J: 9,
-    K: 10,
-    L: 11,
-    M: 12,
-    N: 13,
-    O: 14,
-    P: 15,
-    Q: 16,
-    R: 17,
-    S: 18,
-    T: 19,
-  };
-  for (const key of [
+  const cols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  const sideCols = [
     "A",
     "B",
     "D",
@@ -385,117 +446,45 @@ function generateBracketRequests(rounds, champion) {
     "Q",
     "S",
     "T",
-  ]) {
+    "U",
+    "X",
+    "Y",
+  ];
+  const nameCols = ["C", "H", "M", "R", "W", "V"];
+  const idx = {};
+  cols.forEach((c, i) => (idx[c] = i));
+  sideCols.forEach((c) => {
+    const width = c === "P" ? sideWidth : sideWidth;
     requests.push({
       updateDimensionProperties: {
         range: {
           sheetId: 0,
           dimension: "COLUMNS",
-          startIndex: colIndices[key],
-          endIndex: colIndices[key] + 1,
+          startIndex: idx[c],
+          endIndex: idx[c] + 1,
         },
         properties: { pixelSize: sideWidth },
         fields: "pixelSize",
       },
     });
-  }
-  for (const key of ["C", "H", "M", "R"]) {
+  });
+  // Double W and double V
+  nameCols.forEach((c) => {
+    let width = nameWidth;
+    if (c === "W") width = nameWidth * 2;
+    if (c === "V") width = sideWidth * 2;
     requests.push({
       updateDimensionProperties: {
         range: {
           sheetId: 0,
           dimension: "COLUMNS",
-          startIndex: colIndices[key],
-          endIndex: colIndices[key] + 1,
+          startIndex: idx[c],
+          endIndex: idx[c] + 1,
         },
-        properties: { pixelSize: nameWidth },
+        properties: { pixelSize: width },
         fields: "pixelSize",
       },
     });
-  }
-
-  return requests;
-}
-
-function addNameGroup(
-  requests,
-  rowStart,
-  colStart,
-  player,
-  gold,
-  black,
-  gray,
-  font,
-  borderStyle
-) {
-  const positions = [
-    {
-      key: "seed",
-      colOffset: 0,
-      backgroundColor: gold,
-      textColor: black,
-      fontSize: 11,
-      value: { numberValue: player.seed },
-    },
-    {
-      key: "name",
-      colOffset: 1,
-      backgroundColor: black,
-      textColor: gold,
-      fontSize: 12,
-      value: { stringValue: player.name },
-    },
-    {
-      key: "score",
-      colOffset: 2,
-      backgroundColor: black,
-      textColor: gold,
-      fontSize: 11,
-      value: { numberValue: player.score },
-    },
-  ];
-  for (const { colOffset } of positions) {
-    requests.push({
-      mergeCells: {
-        range: {
-          startRowIndex: rowStart,
-          endRowIndex: rowStart + 2,
-          startColumnIndex: colStart + colOffset,
-          endColumnIndex: colStart + colOffset + 1,
-        },
-        mergeType: "MERGE_ALL",
-      },
-    });
-  }
-  requests.push({
-    updateCells: {
-      rows: [
-        {
-          values: positions.map((pos) => ({
-            userEnteredValue: pos.value,
-            userEnteredFormat: {
-              backgroundColor: pos.backgroundColor,
-              horizontalAlignment: "CENTER",
-              verticalAlignment: "MIDDLE",
-              textFormat: {
-                fontFamily: font.fontFamily,
-                bold: true,
-                fontSize: pos.fontSize,
-                foregroundColor: pos.textColor,
-              },
-              borders: {
-                top: borderStyle,
-                bottom: borderStyle,
-                left: borderStyle,
-                right: borderStyle,
-              },
-            },
-          })),
-        },
-      ],
-      fields: "userEnteredValue,userEnteredFormat",
-      start: { rowIndex: rowStart, columnIndex: colStart },
-    },
   });
 }
 
