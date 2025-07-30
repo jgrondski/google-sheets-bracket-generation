@@ -71,6 +71,93 @@ function generateBracketRequests(rounds, champion) {
     );
     row += 8;
   }
+  // Connector lines between rounds 1 and 2
+  const eCol = 4;
+  const fCol = 5;
+  const gCol = 6;
+  row = 1;
+  for (let i = 0; i < rounds[1].length; i++) {
+    const topStart = row;
+    const bottomStart = row + 4;
+    const topMid = topStart + 1; // Row center of top group
+    const bottomMid = bottomStart + 1; // Row center of bottom group
+
+    // Right borders on E rows between topMid and bottomMid
+    for (let r = topMid; r < bottomMid; r++) {
+      requests.push({
+        updateBorders: {
+          range: {
+            sheetId: 0,
+            startRowIndex: r,
+            endRowIndex: r + 1,
+            startColumnIndex: eCol,
+            endColumnIndex: eCol + 1,
+          },
+          right: borderStyle,
+        },
+      });
+    }
+
+    // Bottom border on E1 (one row above topMid)
+    requests.push({
+      updateBorders: {
+        range: {
+          sheetId: 0,
+          startRowIndex: topMid - 1,
+          endRowIndex: topMid,
+          startColumnIndex: eCol,
+          endColumnIndex: eCol + 1,
+        },
+        bottom: borderStyle,
+      },
+    });
+
+    // Bottom border on F3 (one row above topMid + 2)
+    requests.push({
+      updateBorders: {
+        range: {
+          sheetId: 0,
+          startRowIndex: topMid + 1,
+          endRowIndex: topMid + 2,
+          startColumnIndex: fCol,
+          endColumnIndex: fCol + 1,
+        },
+        bottom: borderStyle,
+      },
+    });
+
+    // Bottom + right border on E5 (one row above bottomMid)
+    requests.push({
+      updateBorders: {
+        range: {
+          sheetId: 0,
+          startRowIndex: bottomMid - 1,
+          endRowIndex: bottomMid,
+          startColumnIndex: eCol,
+          endColumnIndex: eCol + 1,
+        },
+        bottom: borderStyle,
+        right: borderStyle,
+      },
+    });
+
+    // Midpoint bottom border on G (calculated connector row)
+    const connectorRow = topMid + Math.floor((bottomMid - topMid) / 2) - 1;
+    requests.push({
+      updateBorders: {
+        range: {
+          sheetId: 0,
+          startRowIndex: connectorRow,
+          endRowIndex: connectorRow + 1,
+          startColumnIndex: gCol,
+          endColumnIndex: gCol + 1,
+        },
+        bottom: borderStyle,
+      },
+    });
+
+    row += 8;
+  }
 
   // Set row heights
   for (let r = 0; r < 64; r++) {
