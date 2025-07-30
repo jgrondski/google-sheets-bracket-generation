@@ -14,8 +14,7 @@ const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/drive.file",
 ];
-const TOKEN_PATH = proce;
-ss.env.TOKEN_PATH || path.join(__dirname, "token.json");
+const TOKEN_PATH = process.env.TOKEN_PATH || path.join(__dirname, "token.json");
 const CREDENTIALS_PATH =
   process.env.CREDENTIALS_PATH ||
   path.join(__dirname, "oauth-credentials.json");
