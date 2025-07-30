@@ -20,7 +20,7 @@ function generateBracketRequests(rounds, champion) {
     color: gold,
   };
 
-  // Fill background (A through N)
+  // Fill background (A through T)
   requests.push({
     repeatCell: {
       range: {
@@ -28,7 +28,7 @@ function generateBracketRequests(rounds, champion) {
         startRowIndex: 0,
         endRowIndex: 64,
         startColumnIndex: 0,
-        endColumnIndex: 14, // extend to column N
+        endColumnIndex: 20, // extend to column T
       },
       cell: {
         userEnteredFormat: { backgroundColor: gray },
@@ -72,10 +72,10 @@ function generateBracketRequests(rounds, champion) {
     row += 8;
   }
 
-  // Connector lines between rounds 1 and 2
-  const eCol = 4;
-  const fCol = 5;
-  const gCol = 6;
+  // Connectors: Round 1 → 2
+  const eCol = 4,
+    fCol = 5,
+    gCol = 6;
   row = 1;
   for (let i = 0; i < rounds[1].length; i++) {
     const topStart = row;
@@ -83,7 +83,6 @@ function generateBracketRequests(rounds, champion) {
     const topMid = topStart + 1;
     const bottomMid = bottomStart + 1;
 
-    // Vertical right borders on E
     for (let r = topMid; r < bottomMid; r++) {
       requests.push({
         updateBorders: {
@@ -98,7 +97,6 @@ function generateBracketRequests(rounds, champion) {
         },
       });
     }
-    // Bottom border on E
     requests.push({
       updateBorders: {
         range: {
@@ -111,7 +109,6 @@ function generateBracketRequests(rounds, champion) {
         bottom: borderStyle,
       },
     });
-    // Bottom border on F
     requests.push({
       updateBorders: {
         range: {
@@ -124,7 +121,6 @@ function generateBracketRequests(rounds, champion) {
         bottom: borderStyle,
       },
     });
-    // Bottom+right on E bottom
     requests.push({
       updateBorders: {
         range: {
@@ -138,7 +134,6 @@ function generateBracketRequests(rounds, champion) {
         right: borderStyle,
       },
     });
-    // Final bottom on G
     const connectorRow12 = topMid + Math.floor((bottomMid - topMid) / 2) - 1;
     requests.push({
       updateBorders: {
@@ -172,10 +167,10 @@ function generateBracketRequests(rounds, champion) {
     row += 16;
   }
 
-  // Connector lines between rounds 2 and 3
-  const jCol = 9;
-  const kCol = 10;
-  const lCol = 11;
+  // Connectors: Round 2 → 3
+  const jCol = 9,
+    kCol = 10,
+    lCol = 11;
   row = 3;
   for (let i = 0; i < rounds[2].length; i++) {
     const topStart = row;
@@ -183,7 +178,6 @@ function generateBracketRequests(rounds, champion) {
     const topMid = topStart + 1;
     const bottomMid = bottomStart + 1;
 
-    // Vertical right borders on J
     for (let r = topMid; r < bottomMid; r++) {
       requests.push({
         updateBorders: {
@@ -198,7 +192,6 @@ function generateBracketRequests(rounds, champion) {
         },
       });
     }
-    // Bottom on J
     requests.push({
       updateBorders: {
         range: {
@@ -211,7 +204,6 @@ function generateBracketRequests(rounds, champion) {
         bottom: borderStyle,
       },
     });
-    // Bottom on K (shifted down 2 rows)
     requests.push({
       updateBorders: {
         range: {
@@ -224,7 +216,6 @@ function generateBracketRequests(rounds, champion) {
         bottom: borderStyle,
       },
     });
-    // Bottom+right on J bottom
     requests.push({
       updateBorders: {
         range: {
@@ -238,7 +229,6 @@ function generateBracketRequests(rounds, champion) {
         right: borderStyle,
       },
     });
-    // Final bottom on L
     const connectorRow23 = topMid + Math.floor((bottomMid - topMid) / 2) - 1;
     requests.push({
       updateBorders: {
@@ -253,6 +243,90 @@ function generateBracketRequests(rounds, champion) {
       },
     });
     row += 16;
+  }
+
+  // Round 4 (Final before Championship)
+  row = 15;
+  for (const player of rounds[3]) {
+    addNameGroup(
+      requests,
+      row,
+      16,
+      player,
+      gold,
+      black,
+      gray,
+      font,
+      borderStyle
+    );
+    row += 32;
+  }
+
+  // Connectors: Round 3 → 4
+  const oCol = 14,
+    pCol = 15;
+  row = 7;
+  for (let i = 0; i < rounds[3].length; i++) {
+    const topStart = row;
+    const bottomStart = row + 16;
+    const topMid = topStart + 1;
+    const bottomMid = bottomStart + 1;
+
+    for (let r = topMid; r < bottomMid; r++) {
+      requests.push({
+        updateBorders: {
+          range: {
+            sheetId: 0,
+            startRowIndex: r,
+            endRowIndex: r + 1,
+            startColumnIndex: oCol,
+            endColumnIndex: oCol + 1,
+          },
+          right: borderStyle,
+        },
+      });
+    }
+    // Top bottom border on O
+    requests.push({
+      updateBorders: {
+        range: {
+          sheetId: 0,
+          startRowIndex: topMid - 1,
+          endRowIndex: topMid,
+          startColumnIndex: oCol,
+          endColumnIndex: oCol + 1,
+        },
+        bottom: borderStyle,
+      },
+    });
+    // Bottom border on P (shift down 7 rows)
+    requests.push({
+      updateBorders: {
+        range: {
+          sheetId: 0,
+          startRowIndex: topMid + 7,
+          endRowIndex: topMid + 8,
+          startColumnIndex: pCol,
+          endColumnIndex: pCol + 1,
+        },
+        bottom: borderStyle,
+      },
+    });
+    // Bottom+right on O bottom
+    requests.push({
+      updateBorders: {
+        range: {
+          sheetId: 0,
+          startRowIndex: bottomMid - 1,
+          endRowIndex: bottomMid,
+          startColumnIndex: oCol,
+          endColumnIndex: oCol + 1,
+        },
+        bottom: borderStyle,
+        right: borderStyle,
+      },
+    });
+    row += 32;
   }
 
   // Set row heights
@@ -271,7 +345,7 @@ function generateBracketRequests(rounds, champion) {
     });
   }
 
-  // Column widths (A through N)
+  // Column widths (A through T)
   const colIndices = {
     A: 0,
     B: 1,
@@ -287,9 +361,31 @@ function generateBracketRequests(rounds, champion) {
     L: 11,
     M: 12,
     N: 13,
+    O: 14,
+    P: 15,
+    Q: 16,
+    R: 17,
+    S: 18,
+    T: 19,
   };
-  // Apply sideWidth (seed, score, connectors)
-  for (const key of ["A", "B", "D", "E", "F", "G", "I", "J", "K", "L", "N"]) {
+  for (const key of [
+    "A",
+    "B",
+    "D",
+    "E",
+    "F",
+    "G",
+    "I",
+    "J",
+    "K",
+    "L",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "S",
+    "T",
+  ]) {
     requests.push({
       updateDimensionProperties: {
         range: {
@@ -303,8 +399,7 @@ function generateBracketRequests(rounds, champion) {
       },
     });
   }
-  // Apply nameWidth (name columns)
-  for (const key of ["C", "H", "M"]) {
+  for (const key of ["C", "H", "M", "R"]) {
     requests.push({
       updateDimensionProperties: {
         range: {
