@@ -1,25 +1,29 @@
 // index.js
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
-const { google } = require('googleapis');
-const { createGoldBracket } = require('./src/createGoldBracket');
+const fs = require("fs");
+const path = require("path");
+const readline = require("readline");
+const { google } = require("googleapis");
+const { createGoldBracket } = require("./src/createGoldBracket");
 
 const SCOPES = [
-  'https://www.googleapis.com/auth/spreadsheets',
-  'https://www.googleapis.com/auth/drive.file'
+  "https://www.googleapis.com/auth/spreadsheets",
+  "https://www.googleapis.com/auth/drive.file",
 ];
-const TOKEN_PATH = path.join(__dirname, 'token.json');
-const CREDENTIALS_PATH = path.join(__dirname, 'oauth-credentials.json');
+const TOKEN_PATH = path.join(__dirname, "token.json");
+const CREDENTIALS_PATH = path.join(__dirname, "oauth-credentials.json");
 
 fs.readFile(CREDENTIALS_PATH, (err, content) => {
-  if (err) return console.error('❌ Error loading client secret file:', err);
+  if (err) return console.error("❌ Error loading client secret file:", err);
   authorize(JSON.parse(content), createGoldBracket);
 });
 
 function authorize(credentials, callback) {
   const { client_secret, client_id, redirect_uris } = credentials.installed;
-  const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+  const oAuth2Client = new google.auth.OAuth2(
+    client_id,
+    client_secret,
+    redirect_uris[0]
+  );
 
   fs.readFile(TOKEN_PATH, (err, token) => {
     if (err) return getNewToken(oAuth2Client, callback);
@@ -30,19 +34,22 @@ function authorize(credentials, callback) {
 
 function getNewToken(oAuth2Client, callback) {
   const authUrl = oAuth2Client.generateAuthUrl({
-    access_type: 'offline',
+    access_type: "offline",
     scope: SCOPES,
   });
-  console.log('Authorize this app by visiting this URL:', authUrl);
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  rl.question('Enter the code from that page here: ', (code) => {
+  console.log("Authorize this app by visiting this URL:", authUrl);
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  rl.question("Enter the code from that page here: ", (code) => {
     rl.close();
     oAuth2Client.getToken(code, (err, token) => {
-      if (err) return console.error('❌ Error retrieving access token', err);
+      if (err) return console.error("❌ Error retrieving access token", err);
       oAuth2Client.setCredentials(token);
       fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
-        if (err) return console.error('❌ Failed to save token:', err);
-        console.log('✅ Token stored to', TOKEN_PATH);
+        if (err) return console.error("❌ Failed to save token:", err);
+        console.log("✅ Token stored to", TOKEN_PATH);
       });
       callback(oAuth2Client);
     });

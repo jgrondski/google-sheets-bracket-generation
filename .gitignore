@@ -5,3 +5,10 @@ token.json
 .vscode/
 oauth-credentials.json
 .env
+.DS_Store
+*.log
+coverage/
+*.tmp
+*.bak
+*.swp
+.idea/
