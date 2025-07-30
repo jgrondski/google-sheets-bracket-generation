@@ -1,4 +1,3 @@
-// index.js
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
@@ -13,11 +12,11 @@ const TOKEN_PATH = path.join(__dirname, "token.json");
 const CREDENTIALS_PATH = path.join(__dirname, "oauth-credentials.json");
 
 fs.readFile(CREDENTIALS_PATH, (err, content) => {
-  if (err) return console.error("❌ Error loading client secret file:", err);
+  if (err) return console.error("Error loading client secret file:", err);
   authorize(JSON.parse(content), createGoldBracket);
 });
 
-function authorize(credentials, callback) {
+async function authorize(credentials, callback) {
   const { client_secret, client_id, redirect_uris } = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
     client_id,
@@ -25,33 +24,53 @@ function authorize(credentials, callback) {
     redirect_uris[0]
   );
 
-  fs.readFile(TOKEN_PATH, (err, token) => {
-    if (err) return getNewToken(oAuth2Client, callback);
+  try {
+    const token = await readToken(TOKEN_PATH);
     oAuth2Client.setCredentials(JSON.parse(token));
     callback(oAuth2Client);
+  } catch {
+    await getNewToken(oAuth2Client, callback);
+  }
+}
+
+function readToken(tokenPath) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(tokenPath, (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
   });
 }
 
-function getNewToken(oAuth2Client, callback) {
+async function getNewToken(oAuth2Client, callback) {
   const authUrl = oAuth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
   });
   console.log("Authorize this app by visiting this URL:", authUrl);
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  rl.question("Enter the code from that page here: ", (code) => {
-    rl.close();
-    oAuth2Client.getToken(code, (err, token) => {
-      if (err) return console.error("❌ Error retrieving access token", err);
-      oAuth2Client.setCredentials(token);
-      fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
-        if (err) return console.error("❌ Failed to save token:", err);
-        console.log("✅ Token stored to", TOKEN_PATH);
-      });
-      callback(oAuth2Client);
+
+  const code = await promptUser("Enter the code from that page here: ");
+
+  try {
+    const { tokens } = await oAuth2Client.getToken(code);
+    oAuth2Client.setCredentials(tokens);
+    await fs.promises.writeFile(TOKEN_PATH, JSON.stringify(tokens));
+    console.log("✅ Token stored to", TOKEN_PATH);
+    callback(oAuth2Client);
+  } catch (err) {
+    console.error("Error retrieving access token", err);
+  }
+}
+
+function promptUser(query) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    rl.question(query, (answer) => {
+      rl.close();
+      resolve(answer);
     });
   });
 }
