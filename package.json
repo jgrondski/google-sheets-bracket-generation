@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/jgrondski/google-sheets-bracket-generation#readme",
   "dependencies": {
+    "dotenv": "^17.2.1",
     "googleapis": "^154.1.0"
   }
 }

@@ -1,15 +1,24 @@
+require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
 const { google } = require("googleapis");
-const { createGoldBracket } = require("./src/createGoldBracket");
+
+// Make bracket type dynamically configurable via environment variable or argument
+const bracketType = process.env.BRACKET_STYLE || "gold";
+const { createGoldBracket } = require(`./src/create${capitalize(
+  bracketType
+)}Bracket`);
 
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/drive.file",
 ];
-const TOKEN_PATH = path.join(__dirname, "token.json");
-const CREDENTIALS_PATH = path.join(__dirname, "oauth-credentials.json");
+const TOKEN_PATH = proce;
+ss.env.TOKEN_PATH || path.join(__dirname, "token.json");
+const CREDENTIALS_PATH =
+  process.env.CREDENTIALS_PATH ||
+  path.join(__dirname, "oauth-credentials.json");
 
 fs.readFile(CREDENTIALS_PATH, (err, content) => {
   if (err) return console.error("Error loading client secret file:", err);
@@ -73,4 +82,8 @@ function promptUser(query) {
       resolve(answer);
     });
   });
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
