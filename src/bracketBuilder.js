@@ -48,9 +48,12 @@ async function buildBracket(auth) {
 
   // 2️⃣ Prepare requests
   const requests = [];
-  // Load player seeds (use only seeds 1-16 for gold bracket)
-  const allPlayers = require("./data/goldseeds.json");
-  const players = allPlayers.filter((p) => p.seed >= 1 && p.seed <= 16);
+  // Load player names (use only first 16 for bracket)
+  const allPlayers = require("./data/playerlist.json");
+  // Assign seeds based on array order (1-based)
+  const players = allPlayers
+    .slice(0, 16)
+    .map((p, idx) => ({ seed: idx + 1, name: p.name }));
   // Generate rounds for single elimination (16 players = 4 rounds)
   const numRounds = Math.ceil(Math.log2(players.length));
   // Build bracket rounds using core bracket builder
