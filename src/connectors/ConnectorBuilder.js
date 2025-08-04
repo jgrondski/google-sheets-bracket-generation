@@ -10,11 +10,9 @@ const { formatBorderRequest } = require("./connectorUtils");
  */
 function buildConnectors(playerGroups) {
   const requests = [];
-  const debugBorders = [];
+
   const gold = { red: 1, green: 0.8588, blue: 0.4627 };
   const borderWidth = 2;
-  debugBorders;
-  console.log("playerGroups:", JSON.stringify(playerGroups, null, 2));
 
   for (let i = 0; i < playerGroups.length - 1; i += 2) {
     const curGroup = playerGroups[i];
@@ -30,11 +28,6 @@ function buildConnectors(playerGroups) {
         borderWidth
       );
       requests.push(req1);
-      debugBorders.push({
-        type: "top+right",
-        row: curGroup.connectorRow,
-        col: curGroup.connectorCol,
-      });
       // 5. Set cell at [nextGroup.connectorRow, nextGroup.connectorCol] to top border
       const req2 = formatBorderRequest(
         nextGroup.connectorRow,
@@ -44,11 +37,7 @@ function buildConnectors(playerGroups) {
         borderWidth
       );
       requests.push(req2);
-      debugBorders.push({
-        type: "top",
-        row: nextGroup.connectorRow,
-        col: nextGroup.connectorCol,
-      });
+
       // 6. Set all cells between above two (same col, different rows) to right border
       const minRow = Math.min(curGroup.connectorRow, nextGroup.connectorRow);
       const maxRow = Math.max(curGroup.connectorRow, nextGroup.connectorRow);
@@ -61,11 +50,6 @@ function buildConnectors(playerGroups) {
           borderWidth
         );
         requests.push(req3);
-        debugBorders.push({
-          type: "right",
-          row: r,
-          col: curGroup.connectorCol,
-        });
       }
       // 7. Calculate connector row midpoint
       const conRow = Math.floor(
@@ -80,15 +64,8 @@ function buildConnectors(playerGroups) {
         borderWidth
       );
       requests.push(req4);
-      debugBorders.push({
-        type: "top-mid",
-        row: conRow,
-        col: curGroup.connectorCol + 1,
-      });
-    }
     // If current group is BOTTOM, skip
   }
-  console.log("Connector border debug:", JSON.stringify(debugBorders, null, 2));
   return requests;
 }
 
