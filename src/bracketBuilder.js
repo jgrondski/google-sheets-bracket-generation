@@ -3,6 +3,11 @@
 const { google } = require("googleapis");
 const PlayerGroup = require("./models/PlayerGroup");
 
+const connectorType = {
+  TOP: "TOP",
+  BOTTOM: "BOTTOM",
+};
+
 const requests = [];
 
 const TARGET_FOLDER_ID = process.env.TARGET_FOLDER_ID;
@@ -133,15 +138,30 @@ async function buildBracket(auth) {
     });
   }
 
+  const playerGroups = [];
   // 3️⃣ Player groups (all rounds except final)
   for (let r = 0; r < rounds.length - 1; r++) {
     for (let i = 0; i < rounds[r].length; i++) {
       const p = rounds[r][i];
       const { row, col } = getPosition(r, i);
-      const group = new PlayerGroup(row - 1, col - 1, p.seed, p.name, p.score);
+      const conType = i % 2 === 0 ? connectorType.TOP : connectorType.BOTTOM;
+      const group = new PlayerGroup(
+        row - 1,
+        col - 1,
+        p.seed,
+        p.name,
+        p.score,
+        conType
+      );
+      playerGroups.push(group);
       requests.push(...group.toRequests());
     }
   }
+
+  // 3️⃣.5 Connector borders between player groups
+  const { buildConnectors } = require("./connectors/ConnectorBuilder");
+  const connectorRequests = buildConnectors(playerGroups);
+  requests.push(...connectorRequests);
 
   // 3.5️⃣ Champion styling (replaces final seed)
   const font = { fontFamily: "Montserrat", bold: true, fontSize: 34 };
@@ -168,7 +188,6 @@ async function buildBracket(auth) {
     }))
   );
   const champ = rounds[lastRoundIdx][0]; // first element is the winner (matchIndex=0)
-  console.log(champ);
   // Render champion seed
   requests.push({
     updateCells: {

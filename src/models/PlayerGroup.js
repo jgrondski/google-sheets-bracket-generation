@@ -1,11 +1,15 @@
 // ==================== src/models/PlayerGroup.js ====================
+
 class PlayerGroup {
-  constructor(rowStart, colStart, seed, name, score) {
+  constructor(rowStart, colStart, seed, name, score, conType) {
     this.rowStart = rowStart;
     this.colStart = colStart;
     this.seed = seed;
     this.name = name;
     this.score = score;
+    this.conType = conType;
+    this.connectorRow = rowStart + 1; // connector row is always one below the group
+    this.connectorCol = colStart + 3; // right connector is one column after the group
   }
 
   // Dimensions
