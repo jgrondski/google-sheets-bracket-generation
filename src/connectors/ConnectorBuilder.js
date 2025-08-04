@@ -64,7 +64,8 @@ function buildConnectors(playerGroups) {
         borderWidth
       );
       requests.push(req4);
-    // If current group is BOTTOM, skip
+      // If current group is BOTTOM, skip
+    }
   }
   return requests;
 }
