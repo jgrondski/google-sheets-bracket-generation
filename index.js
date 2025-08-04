@@ -1,14 +1,10 @@
+// ==================== index.js ====================
 require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
 const { google } = require("googleapis");
-
-// Make bracket type dynamically configurable via environment variable or argument
-const bracketType = process.env.BRACKET_STYLE || "gold";
-const { createGoldBracket } = require(`./src/create${capitalize(
-  bracketType
-)}Bracket`);
+const { buildBracket } = require("./src/bracketBuilder");
 
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
@@ -20,8 +16,8 @@ const CREDENTIALS_PATH =
   path.join(__dirname, "oauth-credentials.json");
 
 fs.readFile(CREDENTIALS_PATH, (err, content) => {
-  if (err) return console.error("Error loading client secret file:", err);
-  authorize(JSON.parse(content), createGoldBracket);
+  if (err) return console.error("❌ Error loading client secret file:", err);
+  authorize(JSON.parse(content), buildBracket);
 });
 
 async function authorize(credentials, callback) {
@@ -31,23 +27,13 @@ async function authorize(credentials, callback) {
     client_secret,
     redirect_uris[0]
   );
-
   try {
-    const token = await readToken(TOKEN_PATH);
+    const token = await fs.promises.readFile(TOKEN_PATH);
     oAuth2Client.setCredentials(JSON.parse(token));
-    callback(oAuth2Client);
+    await callback(oAuth2Client);
   } catch {
     await getNewToken(oAuth2Client, callback);
   }
-}
-
-function readToken(tokenPath) {
-  return new Promise((resolve, reject) => {
-    fs.readFile(tokenPath, (err, data) => {
-      if (err) reject(err);
-      else resolve(data);
-    });
-  });
 }
 
 async function getNewToken(oAuth2Client, callback) {
@@ -57,32 +43,20 @@ async function getNewToken(oAuth2Client, callback) {
   });
   console.log("Authorize this app by visiting this URL:", authUrl);
 
-  const code = await promptUser("Enter the code from that page here: ");
-
-  try {
-    const { tokens } = await oAuth2Client.getToken(code);
-    oAuth2Client.setCredentials(tokens);
-    await fs.promises.writeFile(TOKEN_PATH, JSON.stringify(tokens));
-    console.log("✅ Token stored to", TOKEN_PATH);
-    callback(oAuth2Client);
-  } catch (err) {
-    console.error("Error retrieving access token", err);
-  }
-}
-
-function promptUser(query) {
-  return new Promise((resolve) => {
+  const code = await new Promise((resolve) => {
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
     });
-    rl.question(query, (answer) => {
+    rl.question("Enter the code from that page here: ", (answer) => {
       rl.close();
       resolve(answer);
     });
   });
-}
 
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+  const { tokens } = await oAuth2Client.getToken(code);
+  oAuth2Client.setCredentials(tokens);
+  await fs.promises.writeFile(TOKEN_PATH, JSON.stringify(tokens));
+  console.log("✅ Token stored to", TOKEN_PATH);
+  await callback(oAuth2Client);
 }
