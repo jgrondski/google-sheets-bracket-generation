@@ -11,7 +11,7 @@ const connectorType = {
 const requests = [];
 
 const TARGET_FOLDER_ID = process.env.TARGET_FOLDER_ID;
-const BRACKET_TITLE = "Gold Bracket";
+// BRACKET_TITLE will be set from config
 
 /**
  * Compute 1-based row & column for a PlayerGroup in a bracket grid.
@@ -29,6 +29,19 @@ function getPosition(roundIndex, matchIndex) {
 }
 
 async function buildBracket(auth) {
+  // Load config and player names from playerlist.json
+  const playerConfig = require("./data/playerlist.json");
+  const { sheetName, gold } = playerConfig.options;
+  const { bracketSize, bracketName } = gold;
+  // Use top bracketSize players
+  const players = playerConfig.players
+    .slice(0, parseInt(bracketSize, 10))
+    .map((p, idx) => ({ seed: idx + 1, name: p.name }));
+  // Generate rounds for single elimination
+  const numRounds = Math.ceil(Math.log2(players.length));
+  // Use sheetName for spreadsheet title and bracketName for sheet name
+  const BRACKET_TITLE = sheetName;
+
   const drive = google.drive({ version: "v3", auth });
   const sheets = google.sheets({ version: "v4", auth });
 
@@ -46,16 +59,26 @@ async function buildBracket(auth) {
     `✅ Spreadsheet created: https://docs.google.com/spreadsheets/d/${spreadsheetId}`
   );
 
+  // Rename default sheet from 'Sheet1' to bracketName
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          updateSheetProperties: {
+            properties: {
+              sheetId: 0,
+              title: bracketName,
+            },
+            fields: "title",
+          },
+        },
+      ],
+    },
+  });
+
   // 2️⃣ Prepare requests
   const requests = [];
-  // Load player names (use only first 16 for bracket)
-  const allPlayers = require("./data/playerlist.json");
-  // Assign seeds based on array order (1-based)
-  const players = allPlayers
-    .slice(0, 16)
-    .map((p, idx) => ({ seed: idx + 1, name: p.name }));
-  // Generate rounds for single elimination (16 players = 4 rounds)
-  const numRounds = Math.ceil(Math.log2(players.length));
   // Build bracket rounds using core bracket builder
   const { buildBracketData } = require("./bracketBuilderCore");
   // Convert bracketData to flat player objects for rendering
