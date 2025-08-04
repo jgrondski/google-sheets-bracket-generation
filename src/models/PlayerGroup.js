@@ -51,58 +51,47 @@ class PlayerGroup {
     }
 
     // Update values & formatting
+    // Only set numberValue for valid numbers, otherwise use stringValue
+
+    const seedCell = Number.isFinite(this.seed)
+      ? { userEnteredValue: { numberValue: this.seed } }
+      : { userEnteredValue: { stringValue: "" } };
+
+    const nameCell = { userEnteredValue: { stringValue: this.name || "" } };
+
+    const scoreCell = Number.isFinite(this.score)
+      ? { userEnteredValue: { numberValue: this.score } }
+      : { userEnteredValue: { stringValue: "" } };
+
+    // Add formatting to each cell
+    seedCell.userEnteredFormat = {
+      backgroundColor: gold,
+      horizontalAlignment: "CENTER",
+      verticalAlignment: "MIDDLE",
+      textFormat: { ...font, fontSize: 11, foregroundColor: black },
+      borders: { top: border, bottom: border, left: border, right: border },
+    };
+    nameCell.userEnteredFormat = {
+      backgroundColor: black,
+      horizontalAlignment: "CENTER",
+      verticalAlignment: "MIDDLE",
+      textFormat: { ...font, fontSize: 12, foregroundColor: gold },
+      borders: { top: border, bottom: border, left: border, right: border },
+    };
+    scoreCell.userEnteredFormat = {
+      backgroundColor: black,
+      horizontalAlignment: "CENTER",
+      verticalAlignment: "MIDDLE",
+      textFormat: { ...font, fontSize: 11, foregroundColor: gold },
+      borders: { top: border, bottom: border, left: border, right: border },
+    };
+
     requests.push({
       updateCells: {
         start: { rowIndex: this.rowStart, columnIndex: this.colStart },
         rows: [
           {
-            values: [
-              {
-                userEnteredValue: { numberValue: this.seed },
-                userEnteredFormat: {
-                  backgroundColor: gold,
-                  horizontalAlignment: "CENTER",
-                  verticalAlignment: "MIDDLE",
-                  textFormat: { ...font, fontSize: 11, foregroundColor: black },
-                  borders: {
-                    top: border,
-                    bottom: border,
-                    left: border,
-                    right: border,
-                  },
-                },
-              },
-              {
-                userEnteredValue: { stringValue: this.name },
-                userEnteredFormat: {
-                  backgroundColor: black,
-                  horizontalAlignment: "CENTER",
-                  verticalAlignment: "MIDDLE",
-                  textFormat: { ...font, fontSize: 12, foregroundColor: gold },
-                  borders: {
-                    top: border,
-                    bottom: border,
-                    left: border,
-                    right: border,
-                  },
-                },
-              },
-              {
-                userEnteredValue: { numberValue: this.score },
-                userEnteredFormat: {
-                  backgroundColor: black,
-                  horizontalAlignment: "CENTER",
-                  verticalAlignment: "MIDDLE",
-                  textFormat: { ...font, fontSize: 11, foregroundColor: gold },
-                  borders: {
-                    top: border,
-                    bottom: border,
-                    left: border,
-                    right: border,
-                  },
-                },
-              },
-            ],
+            values: [seedCell, nameCell, scoreCell],
           },
         ],
         fields: "userEnteredValue,userEnteredFormat",

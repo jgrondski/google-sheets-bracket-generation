@@ -31,8 +31,16 @@ async function authorize(credentials, callback) {
     const token = await fs.promises.readFile(TOKEN_PATH);
     oAuth2Client.setCredentials(JSON.parse(token));
     await callback(oAuth2Client);
-  } catch {
-    await getNewToken(oAuth2Client, callback);
+  } catch (err) {
+    // Only reauthorize if the error is due to missing/invalid token
+    if (
+      err.code === "ENOENT" ||
+      (err.message && err.message.includes("invalid_grant"))
+    ) {
+      await getNewToken(oAuth2Client, callback);
+    } else {
+      console.error("❌ Error during authorization:", err);
+    }
   }
 }
 

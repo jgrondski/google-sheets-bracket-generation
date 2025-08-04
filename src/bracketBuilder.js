@@ -48,7 +48,23 @@ async function buildBracket(auth) {
 
   // 2️⃣ Prepare requests
   const requests = [];
-  const rounds = require("./data/rounds.json");
+  // Load player seeds (use only seeds 1-16 for gold bracket)
+  const allPlayers = require("./data/goldseeds.json");
+  const players = allPlayers.filter((p) => p.seed >= 1 && p.seed <= 16);
+  // Generate rounds for single elimination (16 players = 4 rounds)
+  const numRounds = Math.ceil(Math.log2(players.length));
+  // Build bracket rounds using core bracket builder
+  const { buildBracketData } = require("./bracketBuilderCore");
+  // Convert bracketData to flat player objects for rendering
+  const bracketData = buildBracketData(players);
+  // Flatten matches for each round into player objects (for PlayerGroup rendering)
+  const rounds = bracketData.map((round) => {
+    // For each match, flatten to [{seed, name, score}, {seed, name, score}]
+    return round.flat().map((p) => {
+      if (p) return { seed: p.seed, name: p.name, score: "" };
+      return { seed: "", name: "", score: "" };
+    });
+  });
 
   // Champion position overrides for widths & merges
   const lastRoundIdx = rounds.length - 1; // final round
@@ -145,6 +161,20 @@ async function buildBracket(auth) {
       const p = rounds[r][i];
       const { row, col } = getPosition(r, i);
       const conType = i % 2 === 0 ? connectorType.TOP : connectorType.BOTTOM;
+      // Only set numberValue for valid numbers, otherwise use stringValue or undefined
+      let seedValue = {};
+      if (typeof p.seed === "number" && !isNaN(p.seed) && p.seed !== "") {
+        seedValue = { numberValue: p.seed };
+      } else {
+        seedValue = { stringValue: "" };
+      }
+      let scoreValue = {};
+      if (typeof p.score === "number" && !isNaN(p.score) && p.score !== "") {
+        scoreValue = { numberValue: p.score };
+      } else {
+        scoreValue = { stringValue: "" };
+      }
+      // Build PlayerGroup as before
       const group = new PlayerGroup(
         row - 1,
         col - 1,
@@ -154,7 +184,15 @@ async function buildBracket(auth) {
         conType
       );
       playerGroups.push(group);
-      requests.push(...group.toRequests());
+      // Patch: update toRequests to use correct value types
+      // If PlayerGroup.toRequests expects raw values, this is handled there. If not, update here.
+      requests.push(
+        ...group.toRequests(
+          seedValue,
+          { stringValue: p.name || "" },
+          scoreValue
+        )
+      );
     }
   }
 
@@ -189,32 +227,31 @@ async function buildBracket(auth) {
   );
   const champ = rounds[lastRoundIdx][0]; // first element is the winner (matchIndex=0)
   // Render champion seed
+  const champSeedCell = Number.isFinite(champ.seed)
+    ? { userEnteredValue: { numberValue: champ.seed } }
+    : { userEnteredValue: { stringValue: "" } };
+  champSeedCell.userEnteredFormat = {
+    backgroundColor: { red: 1, green: 0.8588, blue: 0.4627 },
+    horizontalAlignment: "CENTER",
+    verticalAlignment: "MIDDLE",
+    textFormat: {
+      ...font,
+      fontSize: 34,
+      foregroundColor: { red: 0, green: 0, blue: 0 },
+    },
+    borders: {
+      top: border,
+      bottom: border,
+      left: border,
+      right: border,
+    },
+  };
   requests.push({
     updateCells: {
       start: { rowIndex: champMergeStart, columnIndex: seedIdx },
       rows: [
         {
-          values: [
-            {
-              userEnteredValue: { numberValue: champ.seed },
-              userEnteredFormat: {
-                backgroundColor: { red: 1, green: 0.8588, blue: 0.4627 },
-                horizontalAlignment: "CENTER",
-                verticalAlignment: "MIDDLE",
-                textFormat: {
-                  ...font,
-                  fontSize: 34,
-                  foregroundColor: { red: 0, green: 0, blue: 0 },
-                },
-                borders: {
-                  top: border,
-                  bottom: border,
-                  left: border,
-                  right: border,
-                },
-              },
-            },
-          ],
+          values: [champSeedCell],
         },
       ],
       fields: "userEnteredValue,userEnteredFormat",
