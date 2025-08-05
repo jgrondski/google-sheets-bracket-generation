@@ -7,9 +7,10 @@ import { COLORS, DIMENSIONS } from "../styles/styles.js";
 /**
  * Build connector border requests for all rounds
  * @param {Array} playerGroups - Array of PlayerGroup instances
+ * @param {number} sheetId - Target sheet ID
  * @returns {Array} Array of Google Sheets API requests for connector borders
  */
-function buildConnectors(playerGroups) {
+function buildConnectors(playerGroups, sheetId = 0) {
   const requests = [];
 
   const gold = COLORS.gold;
@@ -33,7 +34,8 @@ function buildConnectors(playerGroups) {
         curGroup.connectorCol,
         ["top", "right"],
         gold,
-        borderWidth
+        borderWidth,
+        sheetId
       );
       requests.push(req1);
       // 5. Set cell at [nextGroup.connectorRow, nextGroup.connectorCol] to top border
@@ -42,7 +44,8 @@ function buildConnectors(playerGroups) {
         nextGroup.connectorCol,
         ["top"],
         gold,
-        borderWidth
+        borderWidth,
+        sheetId
       );
       requests.push(req2);
 
@@ -55,7 +58,8 @@ function buildConnectors(playerGroups) {
           curGroup.connectorCol,
           ["right"],
           gold,
-          borderWidth
+          borderWidth,
+          sheetId
         );
         requests.push(req3);
       }
@@ -69,7 +73,8 @@ function buildConnectors(playerGroups) {
         curGroup.connectorCol + 1,
         ["top"],
         gold,
-        borderWidth
+        borderWidth,
+        sheetId
       );
       requests.push(req4);
       // If current group is BOTTOM, skip

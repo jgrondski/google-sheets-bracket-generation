@@ -48,12 +48,74 @@ class BracketConfig {
   }
 
   /**
+   * Get bracket configuration by type
+   * @param {string} bracketType - 'gold' or 'silver'
+   * @returns {Object} Bracket configuration
+   */
+  getBracketConfigByType(bracketType = "gold") {
+    return this.options?.[bracketType] || {};
+  }
+
+  /**
+   * Get available bracket types
+   * @returns {Array} Array of available bracket types
+   */
+  getAvailableBracketTypes() {
+    const types = [];
+    if (this.options?.gold) types.push("gold");
+    if (this.options?.silver) types.push("silver");
+    return types;
+  }
+
+  /**
+   * Check if silver bracket is configured
+   * @returns {boolean} True if silver bracket exists
+   */
+  hasSilverBracket() {
+    return !!this.options?.silver;
+  }
+
+  /**
    * Get the bracket size (number of players to include from the list)
    * @returns {number} Number of players to include
    */
   getBracketSize() {
     const bracketSize = this.getBracketConfig().bracketSize;
     return parseInt(bracketSize, 10) || 8;
+  }
+
+  /**
+   * Get bracket size by type
+   * @param {string} bracketType - 'gold' or 'silver'
+   * @returns {number} Number of players to include
+   */
+  getBracketSizeByType(bracketType = "gold") {
+    const bracketConfig = this.getBracketConfigByType(bracketType);
+    const bracketSize = bracketConfig.bracketSize;
+    return parseInt(bracketSize, 10) || 8;
+  }
+
+  /**
+   * Get bracket name by type
+   * @param {string} bracketType - 'gold' or 'silver'
+   * @returns {string} Bracket name
+   */
+  getBracketNameByType(bracketType = "gold") {
+    const bracketConfig = this.getBracketConfigByType(bracketType);
+    return (
+      bracketConfig.bracketName ||
+      `${bracketType.charAt(0).toUpperCase() + bracketType.slice(1)} Bracket`
+    );
+  }
+
+  /**
+   * Get bracket type by bracket category
+   * @param {string} bracketType - 'gold' or 'silver'
+   * @returns {string} Bracket type
+   */
+  getBracketTypeByCategory(bracketType = "gold") {
+    const bracketConfig = this.getBracketConfigByType(bracketType);
+    return bracketConfig.bracketType || "standard";
   }
 
   /**
@@ -95,6 +157,52 @@ class BracketConfig {
   }
 
   /**
+   * Get players for a specific bracket type
+   * @param {string} bracketType - 'gold' or 'silver'
+   * @returns {Array} Array of player objects for the specified bracket
+   */
+  getPlayersByType(bracketType = "gold") {
+    if (bracketType === "gold") {
+      return this.getPlayers(); // Use existing logic for gold bracket
+    }
+
+    if (bracketType === "silver") {
+      const goldBracketSize = this.getBracketSizeByType("gold");
+      const silverBracketSize = this.getBracketSizeByType("silver");
+
+      // Silver bracket gets players after the gold bracket allocation
+      const startIndex = goldBracketSize;
+      const silverPlayers = this.players.slice(
+        startIndex,
+        startIndex + silverBracketSize
+      );
+
+      return silverPlayers.map((player, index) => ({
+        seed: index + 1,
+        name: player.name,
+        ...player,
+      }));
+    }
+
+    return [];
+  }
+
+  /**
+   * Get total players used across all brackets
+   * @returns {number} Total number of players used
+   */
+  getTotalPlayersUsed() {
+    let total = 0;
+    const types = this.getAvailableBracketTypes();
+
+    types.forEach((type) => {
+      total += this.getBracketSizeByType(type);
+    });
+
+    return Math.min(total, this.players.length);
+  }
+
+  /**
    * Get all players (not limited by bracket size)
    * @returns {Array} Array of all player objects
    */
@@ -121,17 +229,34 @@ class BracketConfig {
       errors.push("No players configured");
     }
 
-    const bracketSize = this.getBracketSize();
-    if (bracketSize < 2) {
-      errors.push("Bracket size must be at least 2");
+    // Validate each bracket type
+    const bracketTypes = this.getAvailableBracketTypes();
+    if (bracketTypes.length === 0) {
+      errors.push(
+        "No bracket configurations found (need at least 'gold' bracket)"
+      );
     }
 
-    // Note: We don't require bracket size to be a power of 2
-    // The system will automatically expand to the next power of 2
+    bracketTypes.forEach((bracketType) => {
+      const bracketSize = this.getBracketSizeByType(bracketType);
+      if (bracketSize < 2) {
+        errors.push(`${bracketType} bracket size must be at least 2`);
+      }
+    });
 
-    if (this.players && this.players.length > bracketSize) {
+    // Check total players vs total bracket capacity
+    const totalPlayersUsed = this.getTotalPlayersUsed();
+    if (this.players && totalPlayersUsed > this.players.length) {
+      errors.push(
+        `Total bracket sizes (${totalPlayersUsed}) exceed available players (${this.players.length})`
+      );
+    }
+
+    // Warn about unused players
+    if (this.players && this.players.length > totalPlayersUsed) {
+      const unused = this.players.length - totalPlayersUsed;
       console.warn(
-        `Warning: ${this.players.length} players configured but bracket size is ${bracketSize}. Extra players will be ignored.`
+        `Warning: ${unused} players will not be included in any bracket`
       );
     }
 
@@ -152,14 +277,34 @@ class BracketConfig {
    * @returns {Object} Configuration summary
    */
   getSummary() {
+    const bracketTypes = this.getAvailableBracketTypes();
+    const brackets = {};
+
+    bracketTypes.forEach((type) => {
+      const players = this.getPlayersByType(type);
+      brackets[type] = {
+        bracketName: this.getBracketNameByType(type),
+        bracketType: this.getBracketTypeByCategory(type),
+        bracketSize: this.getBracketSizeByType(type),
+        actualBracketSize: Math.pow(
+          2,
+          Math.ceil(Math.log2(this.getBracketSizeByType(type)))
+        ),
+        playerCount: players.length,
+      };
+    });
+
     return {
       sheetName: this.getSheetName(),
+      totalPlayersConfigured: this.getAllPlayers().length,
+      totalPlayersUsed: this.getTotalPlayersUsed(),
+      brackets,
+      // Legacy properties for backward compatibility
       bracketName: this.getBracketName(),
       bracketType: this.getBracketType(),
-      bracketSize: this.getBracketSize(), // Number of players to include
-      actualBracketSize: this.getActualBracketSize(), // Power of 2 bracket size
+      bracketSize: this.getBracketSize(),
+      actualBracketSize: this.getActualBracketSize(),
       playerCount: this.getPlayers().length,
-      totalPlayersConfigured: this.getAllPlayers().length,
     };
   }
 }

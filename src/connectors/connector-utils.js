@@ -18,15 +18,16 @@ function a1ToRowCol(cell) {
 }
 
 /**
- * Format a Google Sheets API border request for a cell
- * @param {number} row
- * @param {number} col
- * @param {Array<'top'|'right'|'bottom'|'left'>} borders
- * @param {object} color - {red, green, blue}
- * @param {number} width
- * @returns {object} Google Sheets API request
+ * Format a border request for Google Sheets API
+ * @param {number} row - Row index (0-based)
+ * @param {number} col - Column index (0-based)
+ * @param {Array} borders - Array of border sides
+ * @param {Object} color - Border color object
+ * @param {number} width - Border width
+ * @param {number} sheetId - Target sheet ID
+ * @returns {Object} Border request object
  */
-function formatBorderRequest(row, col, borders, color, width = 2) {
+function formatBorderRequest(row, col, borders, color, width, sheetId = 0) {
   const borderObj = {};
   for (const side of borders) {
     borderObj[side] = {
@@ -38,7 +39,7 @@ function formatBorderRequest(row, col, borders, color, width = 2) {
   return {
     updateBorders: {
       range: {
-        sheetId: 0,
+        sheetId: sheetId,
         startRowIndex: row,
         endRowIndex: row + 1,
         startColumnIndex: col,

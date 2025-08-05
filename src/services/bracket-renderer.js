@@ -22,6 +22,17 @@ class BracketRenderer {
    * @returns {Promise<void>}
    */
   async renderBracket(spreadsheetId, layout) {
+    return this.renderBracketOnSheet(spreadsheetId, layout, 0);
+  }
+
+  /**
+   * Render a bracket layout to a specific sheet
+   * @param {string} spreadsheetId - Spreadsheet ID
+   * @param {BracketLayout} layout - Bracket layout instance
+   * @param {number} sheetId - Target sheet ID
+   * @returns {Promise<void>}
+   */
+  async renderBracketOnSheet(spreadsheetId, layout, sheetId) {
     const requests = [];
 
     // 1. Setup column count first
@@ -29,7 +40,7 @@ class BracketRenderer {
     requests.push({
       updateSheetProperties: {
         properties: {
-          sheetId: 0,
+          sheetId: sheetId,
           gridProperties: {
             columnCount: bounds.bgEndCol,
           },
@@ -39,23 +50,26 @@ class BracketRenderer {
     });
 
     // 2. Setup background and dimensions
-    const backgroundRequests = this.createBackgroundRequests(layout);
+    const backgroundRequests = this.createBackgroundRequests(layout, sheetId);
     requests.push(...backgroundRequests);
 
     // 3. Setup row and column dimensions
-    const dimensionRequests = this.createDimensionRequests(layout);
+    const dimensionRequests = this.createDimensionRequests(layout, sheetId);
     requests.push(...dimensionRequests);
 
     // 4. Create player groups
-    const playerGroupRequests = this.createPlayerGroupRequests(layout);
+    const playerGroupRequests = this.createPlayerGroupRequests(layout, sheetId);
     requests.push(...playerGroupRequests);
 
     // 5. Create connector borders
-    const connectorRequests = await this.createConnectorRequests(layout);
+    const connectorRequests = await this.createConnectorRequests(
+      layout,
+      sheetId
+    );
     requests.push(...connectorRequests);
 
     // 6. Create champion styling
-    const championRequests = this.createChampionRequests(layout);
+    const championRequests = this.createChampionRequests(layout, sheetId);
     requests.push(...championRequests);
 
     // Apply all requests
@@ -65,22 +79,25 @@ class BracketRenderer {
   /**
    * Create background formatting requests
    * @param {BracketLayout} layout - Bracket layout
+   * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createBackgroundRequests(layout) {
+  createBackgroundRequests(layout, sheetId = 0) {
     const bounds = layout.calculateGridBounds();
     return this.requestBuilder.createBackgroundRequest(
       bounds.bgEndRow,
-      bounds.bgEndCol
+      bounds.bgEndCol,
+      sheetId
     );
   }
 
   /**
    * Create dimension setup requests (row heights and column widths)
    * @param {BracketLayout} layout - Bracket layout
+   * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createDimensionRequests(layout) {
+  createDimensionRequests(layout, sheetId = 0) {
     const bounds = layout.calculateGridBounds();
     const columnConfig = layout.calculateColumnConfig();
 
@@ -88,7 +105,8 @@ class BracketRenderer {
 
     // Row dimensions
     const rowRequests = this.requestBuilder.createRowDimensionRequests(
-      bounds.bgEndRow
+      bounds.bgEndRow,
+      sheetId
     );
     requests.push(...rowRequests);
 
@@ -98,7 +116,8 @@ class BracketRenderer {
       bounds.seedIdx,
       bounds.nameIdx,
       columnConfig.nameCols,
-      columnConfig.connectorCols
+      columnConfig.connectorCols,
+      sheetId
     );
     requests.push(...colRequests);
 
@@ -108,9 +127,10 @@ class BracketRenderer {
   /**
    * Create player group requests
    * @param {BracketLayout} layout - Bracket layout
+   * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createPlayerGroupRequests(layout) {
+  createPlayerGroupRequests(layout, sheetId = 0) {
     const requests = [];
     const rounds = layout.getRounds();
     const lastRoundIdx = layout.getLastRoundIndex();
@@ -145,7 +165,7 @@ class BracketRenderer {
 
           // Generate requests for this group
           if (p.isBye) {
-            requests.push(...group.toByeRequests());
+            requests.push(...group.toByeRequests(sheetId));
           } else {
             // Prepare value objects for the group
             const seedValue = this.prepareValueObject(p.seed);
@@ -153,7 +173,7 @@ class BracketRenderer {
             const scoreValue = this.prepareValueObject(p.score);
 
             requests.push(
-              ...group.toRequests(seedValue, nameValue, scoreValue)
+              ...group.toRequests(seedValue, nameValue, scoreValue, sheetId)
             );
           }
         }
@@ -169,9 +189,10 @@ class BracketRenderer {
   /**
    * Create connector border requests
    * @param {BracketLayout} layout - Bracket layout
+   * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  async createConnectorRequests(layout) {
+  async createConnectorRequests(layout, sheetId = 0) {
     const connectorBuilder = await import("../connectors/connector-builder.js");
     const { buildConnectors } = connectorBuilder.default;
     const lastRoundIdx = layout.getLastRoundIndex();
@@ -180,17 +201,18 @@ class BracketRenderer {
     const filteredGroups = this.playerGroups.filter(
       (pg) => pg.roundIndex < lastRoundIdx
     );
-    return buildConnectors(filteredGroups);
+    return buildConnectors(filteredGroups, sheetId);
   }
 
   /**
    * Create champion styling requests
    * @param {BracketLayout} layout - Bracket layout
+   * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createChampionRequests(layout) {
+  createChampionRequests(layout, sheetId = 0) {
     const championPos = layout.getChampionPosition();
-    return this.requestBuilder.createChampionRequests(championPos);
+    return this.requestBuilder.createChampionRequests(championPos, sheetId);
   }
 
   /**

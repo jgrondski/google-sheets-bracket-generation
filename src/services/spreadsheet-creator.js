@@ -8,37 +8,104 @@ import { GoogleSheetsService } from "./google-sheets-service.js";
 class SpreadsheetCreator {
   constructor(auth, targetFolderId = null) {
     this.sheetsService = new GoogleSheetsService(auth);
-    this.targetFolderId = targetFolderId || process.env.TARGET_FOLDER_ID;
+    this.targetFolderId = targetFolderId;
   }
 
   /**
-   * Create a new spreadsheet for a tournament bracket
-   * @param {Object} config - Tournament configuration
-   * @returns {Promise<Object>} Spreadsheet information
+   * Create a tournament spreadsheet with proper layout
+   * @param {BracketConfig} config - Bracket configuration
+   * @returns {Promise<Object>} Spreadsheet details
    */
   async createTournamentSpreadsheet(config) {
     const title = config.getSheetName();
-    const bracketName = config.getBracketName();
 
-    // Create the spreadsheet
     const spreadsheetId = await this.sheetsService.createSpreadsheet(
       title,
       this.targetFolderId
     );
 
-    // Rename the default sheet
-    await this.sheetsService.renameSheet(spreadsheetId, 0, bracketName);
+    // Calculate required dimensions
+    const columnCount = 24; // Standard bracket column count
+    await this.setupBracketLayout(spreadsheetId, columnCount);
 
     const url = this.sheetsService.getSpreadsheetUrl(spreadsheetId);
-
-    console.log(`✅ Spreadsheet created: ${url}`);
+    console.log(`✅ Tournament spreadsheet created: ${url}`);
 
     return {
       spreadsheetId,
+      sheetId: 0,
+      sheetName: title,
       url,
+    };
+  }
+
+  /**
+   * Create a multi-bracket spreadsheet with separate sheets for each bracket
+   * @param {BracketConfig} config - Bracket configuration
+   * @returns {Promise<Object>} Spreadsheet details with sheet information
+   */
+  async createMultiBracketSpreadsheet(config) {
+    const title = config.getSheetName();
+    const bracketTypes = config.getAvailableBracketTypes();
+
+    const spreadsheetId = await this.sheetsService.createSpreadsheet(
       title,
-      bracketName,
-      sheetId: 0, // Default sheet ID
+      this.targetFolderId
+    );
+
+    const sheets = {};
+
+    // Set up each bracket sheet
+    for (let i = 0; i < bracketTypes.length; i++) {
+      const bracketType = bracketTypes[i];
+      const bracketName = config.getBracketNameByType(bracketType);
+
+      // Use generous dimensions to ensure we have enough space
+      const requiredRows = 150; // Should be enough for most brackets
+      const requiredCols = 35; // Should be enough for most brackets
+
+      if (i === 0) {
+        // Rename the default sheet for the first bracket (usually gold)
+        await this.sheetsService.renameSheet(spreadsheetId, 0, bracketName);
+
+        // Resize the default sheet to required dimensions
+        await this.sheetsService.resizeSheet(
+          spreadsheetId,
+          0,
+          requiredRows,
+          requiredCols
+        );
+
+        sheets[bracketType] = {
+          sheetId: 0,
+          sheetName: bracketName,
+        };
+      } else {
+        // Add new sheets for additional brackets with proper dimensions
+        const sheetId = await this.sheetsService.addSheet(
+          spreadsheetId,
+          bracketName,
+          requiredRows,
+          requiredCols
+        );
+        sheets[bracketType] = {
+          sheetId,
+          sheetName: bracketName,
+        };
+      }
+
+      console.log(
+        `✅ Sheet created: ${bracketName} (ID: ${sheets[bracketType].sheetId})`
+      );
+    }
+
+    const url = this.sheetsService.getSpreadsheetUrl(spreadsheetId);
+    console.log(`✅ Multi-bracket spreadsheet created: ${url}`);
+
+    return {
+      spreadsheetId,
+      sheets,
+      url,
     };
   }
 

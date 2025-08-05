@@ -2,9 +2,14 @@
   "options": {
     "sheetName": "CTWC KC Regional 2025",
     "gold": {
-      "bracketSize": "27",
+      "bracketSize": "16",
       "bracketType": "standard",
       "bracketName": "Gold Bracket"
+    },
+    "silver": {
+      "bracketSize": "23",
+      "bracketType": "standard",
+      "bracketName": "Silver Bracket"
     }
   },
   "players": [

@@ -10,14 +10,15 @@ class RequestBuilder {
    * Create background formatting request
    * @param {number} endRow - End row for background
    * @param {number} endCol - End column for background
+   * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createBackgroundRequest(endRow, endCol) {
+  createBackgroundRequest(endRow, endCol, sheetId = 0) {
     return [
       {
         repeatCell: {
           range: {
-            sheetId: 0,
+            sheetId: sheetId,
             startRowIndex: 0,
             endRowIndex: endRow,
             startColumnIndex: 0,
@@ -33,16 +34,17 @@ class RequestBuilder {
   /**
    * Create row dimension requests
    * @param {number} rowCount - Number of rows to set
+   * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createRowDimensionRequests(rowCount) {
+  createRowDimensionRequests(rowCount, sheetId = 0) {
     const requests = [];
 
     for (let r = 0; r < rowCount; r++) {
       requests.push({
         updateDimensionProperties: {
           range: {
-            sheetId: 0,
+            sheetId: sheetId,
             dimension: "ROWS",
             startIndex: r,
             endIndex: r + 1,
@@ -63,6 +65,7 @@ class RequestBuilder {
    * @param {number} nameIdx - Main name column index
    * @param {Array} nameCols - Array of name column indices
    * @param {Set} connectorCols - Set of connector column indices
+   * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
   createColumnDimensionRequests(
@@ -70,7 +73,8 @@ class RequestBuilder {
     seedIdx,
     nameIdx,
     nameCols,
-    connectorCols
+    connectorCols,
+    sheetId = 0
   ) {
     const requests = [];
 
@@ -93,7 +97,7 @@ class RequestBuilder {
       requests.push({
         updateDimensionProperties: {
           range: {
-            sheetId: 0,
+            sheetId: sheetId,
             dimension: "COLUMNS",
             startIndex: c,
             endIndex: c + 1,
@@ -110,9 +114,10 @@ class RequestBuilder {
   /**
    * Create champion styling requests
    * @param {Object} championPos - Champion position data
+   * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createChampionRequests(championPos) {
+  createChampionRequests(championPos, sheetId = 0) {
     const requests = [];
     const { champion, champMergeStart, champMergeEnd, seedIdx, nameIdx } =
       championPos;
@@ -121,7 +126,7 @@ class RequestBuilder {
     const mergeRequests = [seedIdx, nameIdx].map((idx) => ({
       mergeCells: {
         range: {
-          sheetId: 0,
+          sheetId: sheetId,
           startRowIndex: champMergeStart,
           endRowIndex: champMergeEnd,
           startColumnIndex: idx,
@@ -140,7 +145,11 @@ class RequestBuilder {
 
     requests.push({
       updateCells: {
-        start: { rowIndex: champMergeStart, columnIndex: seedIdx },
+        start: {
+          sheetId: sheetId,
+          rowIndex: champMergeStart,
+          columnIndex: seedIdx,
+        },
         rows: [{ values: [champSeedCell] }],
         fields: "userEnteredValue,userEnteredFormat",
       },
@@ -149,7 +158,11 @@ class RequestBuilder {
     // Champion name cell
     requests.push({
       updateCells: {
-        start: { rowIndex: champMergeStart, columnIndex: nameIdx },
+        start: {
+          sheetId: sheetId,
+          rowIndex: champMergeStart,
+          columnIndex: nameIdx,
+        },
         rows: [
           {
             values: [
@@ -164,14 +177,14 @@ class RequestBuilder {
       },
     });
 
-    // Champion header
-    const hdrStart = champMergeEnd;
+    // Champion header - start after the champion merge ends
+    const hdrStart = champMergeEnd + 1;
     const hdrEnd = hdrStart + 4;
 
     requests.push({
       mergeCells: {
         range: {
-          sheetId: 0,
+          sheetId: sheetId,
           startRowIndex: hdrStart,
           endRowIndex: hdrEnd,
           startColumnIndex: nameIdx,
@@ -183,7 +196,11 @@ class RequestBuilder {
 
     requests.push({
       updateCells: {
-        start: { rowIndex: hdrStart, columnIndex: nameIdx },
+        start: {
+          sheetId: sheetId,
+          rowIndex: hdrStart,
+          columnIndex: nameIdx,
+        },
         rows: [
           {
             values: [

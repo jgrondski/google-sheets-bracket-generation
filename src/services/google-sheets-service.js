@@ -124,6 +124,64 @@ class GoogleSheetsService {
       gridProperties: { columnCount },
     });
   }
+
+  /**
+   * Resize an existing sheet
+   * @param {string} spreadsheetId - Spreadsheet ID
+   * @param {number} sheetId - Sheet ID to resize
+   * @param {number} rowCount - New row count
+   * @param {number} columnCount - New column count
+   * @returns {Promise<void>}
+   */
+  async resizeSheet(spreadsheetId, sheetId, rowCount, columnCount) {
+    const request = {
+      updateSheetProperties: {
+        properties: {
+          sheetId: sheetId,
+          gridProperties: {
+            rowCount: rowCount,
+            columnCount: columnCount,
+          },
+        },
+        fields: "gridProperties(rowCount,columnCount)",
+      },
+    };
+
+    await this.sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: { requests: [request] },
+    });
+  }
+
+  /**
+   * Add a new sheet with specified dimensions
+   * @param {string} spreadsheetId - Spreadsheet ID
+   * @param {string} sheetName - Name for the new sheet
+   * @param {number} rowCount - Number of rows (optional, defaults to 1000)
+   * @param {number} columnCount - Number of columns (optional, defaults to 26)
+   * @returns {Promise<number>} New sheet ID
+   */
+  async addSheet(spreadsheetId, sheetName, rowCount = 1000, columnCount = 26) {
+    const request = {
+      addSheet: {
+        properties: {
+          title: sheetName,
+          gridProperties: {
+            rowCount: rowCount,
+            columnCount: columnCount,
+          },
+        },
+      },
+    };
+
+    const response = await this.sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: { requests: [request] },
+    });
+
+    // Return the new sheet ID
+    return response.data.replies[0].addSheet.properties.sheetId;
+  }
 }
 
 export { GoogleSheetsService };

@@ -29,7 +29,7 @@ class PlayerGroup {
   }
 
   // Builds merge & data requests for this group
-  toRequests() {
+  toRequests(seedValue, nameValue, scoreValue, sheetId = 0) {
     const requests = [];
 
     // Merge seed/name/score cells
@@ -37,7 +37,7 @@ class PlayerGroup {
       requests.push({
         mergeCells: {
           range: {
-            sheetId: 0,
+            sheetId: sheetId,
             startRowIndex: this.rowStart,
             endRowIndex: this.rowStart + this.height(),
             startColumnIndex: this.colStart + i,
@@ -65,10 +65,13 @@ class PlayerGroup {
     seedCell.userEnteredFormat = CELL_FORMATS.seed;
     nameCell.userEnteredFormat = CELL_FORMATS.name;
     scoreCell.userEnteredFormat = CELL_FORMATS.score;
-
     requests.push({
       updateCells: {
-        start: { rowIndex: this.rowStart, columnIndex: this.colStart },
+        start: {
+          sheetId: sheetId,
+          rowIndex: this.rowStart,
+          columnIndex: this.colStart,
+        },
         rows: [
           {
             values: [seedCell, nameCell, scoreCell],
@@ -82,7 +85,7 @@ class PlayerGroup {
   }
 
   // Builds requests for bye positions (just background cells)
-  toByeRequests() {
+  toByeRequests(sheetId = 0) {
     const requests = [];
 
     // Create 3 empty cells with gray background (same as bracket background)
@@ -103,7 +106,11 @@ class PlayerGroup {
 
     requests.push({
       updateCells: {
-        start: { rowIndex: this.rowStart, columnIndex: this.colStart },
+        start: {
+          sheetId: sheetId,
+          rowIndex: this.rowStart,
+          columnIndex: this.colStart,
+        },
         rows: [
           {
             values: [seedCell, nameCell, scoreCell],
