@@ -8,13 +8,13 @@ import { COLORS, DIMENSIONS } from "../styles/styles.js";
  * Build connector border requests for all rounds
  * @param {Array} playerGroups - Array of PlayerGroup instances
  * @param {number} sheetId - Target sheet ID
- * @param {string} bracketType - 'gold' or 'silver'
+ * @param {string} colorScheme - 'gold' or 'silver'
  * @returns {Array} Array of Google Sheets API requests for connector borders
  */
-function buildConnectors(playerGroups, sheetId = 0, bracketType = "gold") {
+function buildConnectors(playerGroups, sheetId = 0, colorScheme = "gold") {
   const requests = [];
 
-  const connectorColor = bracketType === "silver" ? COLORS.silver : COLORS.gold;
+  const connectorColor = colorScheme === "silver" ? COLORS.silver : COLORS.gold;
   const borderWidth = DIMENSIONS.connectorBorderWidth;
 
   for (let i = 0; i < playerGroups.length - 1; i += 2) {

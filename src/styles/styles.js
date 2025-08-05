@@ -242,12 +242,12 @@ const DIMENSIONS = {
 };
 
 /**
- * Get cell formats for a specific bracket type
- * @param {string} bracketType - 'gold' or 'silver'
- * @returns {Object} Cell formats for the bracket type
+ * Get cell formats for a specific color scheme
+ * @param {string} colorScheme - 'gold' or 'silver'
+ * @returns {Object} Cell formats for the color scheme
  */
-function getCellFormats(bracketType = "gold") {
-  if (bracketType === "silver") {
+function getCellFormats(colorScheme = "gold") {
+  if (colorScheme === "silver") {
     return {
       seed: CELL_FORMATS.silverSeed,
       name: CELL_FORMATS.silverName,
@@ -274,12 +274,12 @@ function getCellFormats(bracketType = "gold") {
 }
 
 /**
- * Get border styles for a specific bracket type
- * @param {string} bracketType - 'gold' or 'silver'
- * @returns {Object} Border styles for the bracket type
+ * Get border styles for a specific color scheme
+ * @param {string} colorScheme - 'gold' or 'silver'
+ * @returns {Object} Border styles for the color scheme
  */
-function getBorders(bracketType = "gold") {
-  if (bracketType === "silver") {
+function getBorders(colorScheme = "gold") {
+  if (colorScheme === "silver") {
     return {
       primary: BORDERS.silverPrimary,
       medium: BORDERS.silverMedium,

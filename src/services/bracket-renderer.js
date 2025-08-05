@@ -36,7 +36,7 @@ class BracketRenderer {
     spreadsheetId,
     layout,
     sheetId,
-    bracketType = "gold"
+    colorScheme = "gold"
   ) {
     const requests = [];
 
@@ -58,7 +58,7 @@ class BracketRenderer {
     const backgroundRequests = this.createBackgroundRequests(
       layout,
       sheetId,
-      bracketType
+      colorScheme
     );
     requests.push(...backgroundRequests);
 
@@ -70,7 +70,7 @@ class BracketRenderer {
     const playerGroupRequests = this.createPlayerGroupRequests(
       layout,
       sheetId,
-      bracketType
+      colorScheme
     );
     requests.push(...playerGroupRequests);
 
@@ -78,7 +78,7 @@ class BracketRenderer {
     const connectorRequests = await this.createConnectorRequests(
       layout,
       sheetId,
-      bracketType
+      colorScheme
     );
     requests.push(...connectorRequests);
 
@@ -86,7 +86,7 @@ class BracketRenderer {
     const championRequests = this.createChampionRequests(
       layout,
       sheetId,
-      bracketType
+      colorScheme
     );
     requests.push(...championRequests);
 
@@ -100,13 +100,13 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createBackgroundRequests(layout, sheetId = 0, bracketType = "gold") {
+  createBackgroundRequests(layout, sheetId = 0, colorScheme = "gold") {
     const bounds = layout.calculateGridBounds();
     return this.requestBuilder.createBackgroundRequest(
       bounds.bgEndRow,
       bounds.bgEndCol,
       sheetId,
-      bracketType
+      colorScheme
     );
   }
 
@@ -149,7 +149,7 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createPlayerGroupRequests(layout, sheetId = 0, bracketType = "gold") {
+  createPlayerGroupRequests(layout, sheetId = 0, colorScheme = "gold") {
     const requests = [];
     const rounds = layout.getRounds();
     const lastRoundIdx = layout.getLastRoundIndex();
@@ -184,7 +184,7 @@ class BracketRenderer {
 
           // Generate requests for this group
           if (p.isBye) {
-            requests.push(...group.toByeRequests(sheetId, bracketType));
+            requests.push(...group.toByeRequests(sheetId, colorScheme));
           } else {
             // Prepare value objects for the group
             const seedValue = this.prepareValueObject(p.seed);
@@ -197,7 +197,7 @@ class BracketRenderer {
                 nameValue,
                 scoreValue,
                 sheetId,
-                bracketType
+                colorScheme
               )
             );
           }
@@ -217,7 +217,7 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  async createConnectorRequests(layout, sheetId = 0, bracketType = "gold") {
+  async createConnectorRequests(layout, sheetId = 0, colorScheme = "gold") {
     const connectorBuilder = await import("../connectors/connector-builder.js");
     const { buildConnectors } = connectorBuilder.default;
     const lastRoundIdx = layout.getLastRoundIndex();
@@ -226,7 +226,7 @@ class BracketRenderer {
     const filteredGroups = this.playerGroups.filter(
       (pg) => pg.roundIndex < lastRoundIdx
     );
-    return buildConnectors(filteredGroups, sheetId, bracketType);
+    return buildConnectors(filteredGroups, sheetId, colorScheme);
   }
 
   /**
@@ -235,12 +235,12 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createChampionRequests(layout, sheetId = 0, bracketType = "gold") {
+  createChampionRequests(layout, sheetId = 0, colorScheme = "gold") {
     const championPos = layout.getChampionPosition();
     return this.requestBuilder.createChampionRequests(
       championPos,
       sheetId,
-      bracketType
+      colorScheme
     );
   }
 

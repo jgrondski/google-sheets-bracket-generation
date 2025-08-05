@@ -138,11 +138,12 @@ class BuildBracketCommand {
       const sheetInfo = spreadsheet.sheets[bracketType];
 
       // Render this bracket to its dedicated sheet
+      // Use bracketType (gold/silver) as the color scheme
       await renderer.renderBracketOnSheet(
         spreadsheet.spreadsheetId,
         layout,
         sheetInfo.sheetId,
-        bracketType
+        bracketType // bracketType here is the bracket identifier (gold/silver), used as colorScheme
       );
 
       console.log(

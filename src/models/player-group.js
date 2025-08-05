@@ -34,10 +34,10 @@ class PlayerGroup {
     nameValue,
     scoreValue,
     sheetId = 0,
-    bracketType = "gold"
+    colorScheme = "gold"
   ) {
     const requests = [];
-    const CELL_FORMATS = getCellFormats(bracketType);
+    const CELL_FORMATS = getCellFormats(colorScheme);
 
     // Merge seed/name/score cells
     for (let i = 0; i < 3; i++) {
@@ -92,9 +92,9 @@ class PlayerGroup {
   }
 
   // Builds requests for bye positions (just background cells)
-  toByeRequests(sheetId = 0, bracketType = "gold") {
+  toByeRequests(sheetId = 0, colorScheme = "gold") {
     const requests = [];
-    const CELL_FORMATS = getCellFormats(bracketType);
+    const CELL_FORMATS = getCellFormats(colorScheme);
 
     // Create 3 empty cells with gray background (same as bracket background)
     const seedCell = {

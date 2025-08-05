@@ -11,11 +11,11 @@ class RequestBuilder {
    * @param {number} endRow - End row for background
    * @param {number} endCol - End column for background
    * @param {number} sheetId - Target sheet ID
-   * @param {string} bracketType - 'gold' or 'silver'
+   * @param {string} colorScheme - 'gold' or 'silver'
    * @returns {Array} Array of requests
    */
-  createBackgroundRequest(endRow, endCol, sheetId = 0, bracketType = "gold") {
-    const CELL_FORMATS = getCellFormats(bracketType);
+  createBackgroundRequest(endRow, endCol, sheetId = 0, colorScheme = "gold") {
+    const CELL_FORMATS = getCellFormats(colorScheme);
     return [
       {
         repeatCell: {
@@ -119,9 +119,9 @@ class RequestBuilder {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createChampionRequests(championPos, sheetId = 0, bracketType = "gold") {
+  createChampionRequests(championPos, sheetId = 0, colorScheme = "gold") {
     const requests = [];
-    const CELL_FORMATS = getCellFormats(bracketType);
+    const CELL_FORMATS = getCellFormats(colorScheme);
     const { champion, champMergeStart, champMergeEnd, seedIdx, nameIdx } =
       championPos;
 
