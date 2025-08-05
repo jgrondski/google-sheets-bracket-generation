@@ -90,13 +90,14 @@ class BuildBracketCommand {
       if (isMultiBracket) {
         await this.renderMultiSheetTournament(spreadsheet, tournament, config);
       } else {
-        // 5a. Generate bracket layout for single bracket
+        // Generate bracket layout for single bracket
         const layout = new BracketLayout(tournament);
         console.log("✅ Bracket layout calculated");
 
-        // 5b. Render bracket to spreadsheet
+        // Render bracket to spreadsheet
         const renderer = new BracketRenderer(this.auth);
-        await renderer.renderBracket(spreadsheet.spreadsheetId, layout);
+        const colorScheme = config.getColorSchemeByCategory("gold");
+        await renderer.renderBracketOnSheet(spreadsheet.spreadsheetId, layout, 0, colorScheme);
       }
 
       console.log("✅ Bracket layout applied successfully");

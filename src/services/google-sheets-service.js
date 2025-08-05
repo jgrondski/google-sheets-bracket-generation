@@ -120,9 +120,19 @@ class GoogleSheetsService {
    * @returns {Promise<void>}
    */
   async setColumnCount(spreadsheetId, sheetId, columnCount) {
-    await this.updateSheetProperties(spreadsheetId, sheetId, {
-      gridProperties: { columnCount },
-    });
+    const requests = [
+      {
+        updateSheetProperties: {
+          properties: {
+            sheetId: sheetId,
+            gridProperties: { columnCount },
+          },
+          fields: "gridProperties.columnCount",
+        },
+      },
+    ];
+
+    await this.batchUpdate(spreadsheetId, requests);
   }
 
   /**
