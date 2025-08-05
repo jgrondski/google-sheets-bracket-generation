@@ -4,7 +4,10 @@
   "description": "A simple tool that can generate brackets and push that bracket to a Google Sheet (initially with CTWC-styling)",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "example": "node examples/new-architecture-example.js",
+    "validate-config": "node -e \"const {BracketConfig} = require('./src/config/bracket-config'); const config = BracketConfig.fromFile('./src/data/playerlist.json'); console.log('Config Summary:', config.getSummary()); const errors = config.validate(); console.log('Validation:', errors.length === 0 ? 'PASSED' : 'ERRORS: ' + errors.join(', '));\"",
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
