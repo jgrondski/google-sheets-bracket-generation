@@ -32,7 +32,12 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Promise<void>}
    */
-  async renderBracketOnSheet(spreadsheetId, layout, sheetId) {
+  async renderBracketOnSheet(
+    spreadsheetId,
+    layout,
+    sheetId,
+    bracketType = "gold"
+  ) {
     const requests = [];
 
     // 1. Setup column count first
@@ -50,7 +55,11 @@ class BracketRenderer {
     });
 
     // 2. Setup background and dimensions
-    const backgroundRequests = this.createBackgroundRequests(layout, sheetId);
+    const backgroundRequests = this.createBackgroundRequests(
+      layout,
+      sheetId,
+      bracketType
+    );
     requests.push(...backgroundRequests);
 
     // 3. Setup row and column dimensions
@@ -58,18 +67,27 @@ class BracketRenderer {
     requests.push(...dimensionRequests);
 
     // 4. Create player groups
-    const playerGroupRequests = this.createPlayerGroupRequests(layout, sheetId);
+    const playerGroupRequests = this.createPlayerGroupRequests(
+      layout,
+      sheetId,
+      bracketType
+    );
     requests.push(...playerGroupRequests);
 
     // 5. Create connector borders
     const connectorRequests = await this.createConnectorRequests(
       layout,
-      sheetId
+      sheetId,
+      bracketType
     );
     requests.push(...connectorRequests);
 
     // 6. Create champion styling
-    const championRequests = this.createChampionRequests(layout, sheetId);
+    const championRequests = this.createChampionRequests(
+      layout,
+      sheetId,
+      bracketType
+    );
     requests.push(...championRequests);
 
     // Apply all requests
@@ -82,12 +100,13 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createBackgroundRequests(layout, sheetId = 0) {
+  createBackgroundRequests(layout, sheetId = 0, bracketType = "gold") {
     const bounds = layout.calculateGridBounds();
     return this.requestBuilder.createBackgroundRequest(
       bounds.bgEndRow,
       bounds.bgEndCol,
-      sheetId
+      sheetId,
+      bracketType
     );
   }
 
@@ -130,7 +149,7 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createPlayerGroupRequests(layout, sheetId = 0) {
+  createPlayerGroupRequests(layout, sheetId = 0, bracketType = "gold") {
     const requests = [];
     const rounds = layout.getRounds();
     const lastRoundIdx = layout.getLastRoundIndex();
@@ -165,7 +184,7 @@ class BracketRenderer {
 
           // Generate requests for this group
           if (p.isBye) {
-            requests.push(...group.toByeRequests(sheetId));
+            requests.push(...group.toByeRequests(sheetId, bracketType));
           } else {
             // Prepare value objects for the group
             const seedValue = this.prepareValueObject(p.seed);
@@ -173,7 +192,13 @@ class BracketRenderer {
             const scoreValue = this.prepareValueObject(p.score);
 
             requests.push(
-              ...group.toRequests(seedValue, nameValue, scoreValue, sheetId)
+              ...group.toRequests(
+                seedValue,
+                nameValue,
+                scoreValue,
+                sheetId,
+                bracketType
+              )
             );
           }
         }
@@ -192,7 +217,7 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  async createConnectorRequests(layout, sheetId = 0) {
+  async createConnectorRequests(layout, sheetId = 0, bracketType = "gold") {
     const connectorBuilder = await import("../connectors/connector-builder.js");
     const { buildConnectors } = connectorBuilder.default;
     const lastRoundIdx = layout.getLastRoundIndex();
@@ -201,7 +226,7 @@ class BracketRenderer {
     const filteredGroups = this.playerGroups.filter(
       (pg) => pg.roundIndex < lastRoundIdx
     );
-    return buildConnectors(filteredGroups, sheetId);
+    return buildConnectors(filteredGroups, sheetId, bracketType);
   }
 
   /**
@@ -210,9 +235,13 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createChampionRequests(layout, sheetId = 0) {
+  createChampionRequests(layout, sheetId = 0, bracketType = "gold") {
     const championPos = layout.getChampionPosition();
-    return this.requestBuilder.createChampionRequests(championPos, sheetId);
+    return this.requestBuilder.createChampionRequests(
+      championPos,
+      sheetId,
+      bracketType
+    );
   }
 
   /**

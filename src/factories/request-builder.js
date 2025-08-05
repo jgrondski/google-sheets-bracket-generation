@@ -1,6 +1,6 @@
 // ==================== src/factories/request-builder.js ====================
 
-import { COLORS, CELL_FORMATS, DIMENSIONS } from "../styles/styles.js";
+import { COLORS, getCellFormats, DIMENSIONS } from "../styles/styles.js";
 
 /**
  * Factory for building Google Sheets API requests
@@ -11,9 +11,11 @@ class RequestBuilder {
    * @param {number} endRow - End row for background
    * @param {number} endCol - End column for background
    * @param {number} sheetId - Target sheet ID
+   * @param {string} bracketType - 'gold' or 'silver'
    * @returns {Array} Array of requests
    */
-  createBackgroundRequest(endRow, endCol, sheetId = 0) {
+  createBackgroundRequest(endRow, endCol, sheetId = 0, bracketType = "gold") {
+    const CELL_FORMATS = getCellFormats(bracketType);
     return [
       {
         repeatCell: {
@@ -117,8 +119,9 @@ class RequestBuilder {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createChampionRequests(championPos, sheetId = 0) {
+  createChampionRequests(championPos, sheetId = 0, bracketType = "gold") {
     const requests = [];
+    const CELL_FORMATS = getCellFormats(bracketType);
     const { champion, champMergeStart, champMergeEnd, seedIdx, nameIdx } =
       championPos;
 

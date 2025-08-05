@@ -141,7 +141,8 @@ class BuildBracketCommand {
       await renderer.renderBracketOnSheet(
         spreadsheet.spreadsheetId,
         layout,
-        sheetInfo.sheetId
+        sheetInfo.sheetId,
+        bracketType
       );
 
       console.log(

@@ -1,6 +1,6 @@
 // ==================== src/models/player-group.js ====================
 
-import { CELL_FORMATS } from "../styles/styles.js";
+import { getCellFormats } from "../styles/styles.js";
 
 class PlayerGroup {
   constructor(rowStart, colStart, seed, name, score, conType) {
@@ -29,8 +29,15 @@ class PlayerGroup {
   }
 
   // Builds merge & data requests for this group
-  toRequests(seedValue, nameValue, scoreValue, sheetId = 0) {
+  toRequests(
+    seedValue,
+    nameValue,
+    scoreValue,
+    sheetId = 0,
+    bracketType = "gold"
+  ) {
     const requests = [];
+    const CELL_FORMATS = getCellFormats(bracketType);
 
     // Merge seed/name/score cells
     for (let i = 0; i < 3; i++) {
@@ -85,8 +92,9 @@ class PlayerGroup {
   }
 
   // Builds requests for bye positions (just background cells)
-  toByeRequests(sheetId = 0) {
+  toByeRequests(sheetId = 0, bracketType = "gold") {
     const requests = [];
+    const CELL_FORMATS = getCellFormats(bracketType);
 
     // Create 3 empty cells with gray background (same as bracket background)
     const seedCell = {
