@@ -1,7 +1,8 @@
 // Ensure the sheet has enough columns for all formatting
 
 const { google } = require("googleapis");
-const PlayerGroup = require("./models/PlayerGroup");
+const PlayerGroup = require("./models/player-group");
+const { COLORS, CELL_FORMATS, DIMENSIONS } = require("./styles/styles");
 
 const connectorType = {
   TOP: "TOP",
@@ -81,7 +82,7 @@ async function buildBracket(auth) {
   const requests = [];
 
   // Use the new CompleteBracket system
-  const { CompleteBracket } = require("./CompleteBracket");
+  const { CompleteBracket } = require("./complete-bracket");
   const bracket = new CompleteBracket(players.map((p) => ({ name: p.name })));
 
   console.log(
@@ -145,7 +146,7 @@ async function buildBracket(auth) {
   const nameIdx = seedIdx + 1;
 
   // Background fill through champion
-  const gray = { red: 0.192156, green: 0.203922, blue: 0.215686 };
+  const gray = COLORS.gray;
   // bottom of last round‑1 group
   const bgEndRow = getPosition(0, rounds[0].length - 1).row + 2;
   // one col after champion name, plus extra for final connectors
@@ -172,7 +173,7 @@ async function buildBracket(auth) {
         startColumnIndex: 0,
         endColumnIndex: bgEndCol,
       },
-      cell: { userEnteredFormat: { backgroundColor: gray } },
+      cell: { userEnteredFormat: CELL_FORMATS.background },
       fields: "userEnteredFormat.backgroundColor",
     },
   });
@@ -188,7 +189,7 @@ async function buildBracket(auth) {
           startIndex: r,
           endIndex: r + 1,
         },
-        properties: { pixelSize: 14 },
+        properties: { pixelSize: DIMENSIONS.rowHeight },
         fields: "pixelSize",
       },
     });
@@ -204,12 +205,12 @@ async function buildBracket(auth) {
   }
   for (let c = 0; c < bgEndCol; c++) {
     let width;
-    if (c === 0 || c === bgEndCol - 1) width = 16;
-    else if (c === seedIdx) width = 64;
-    else if (c === nameIdx) width = 336;
-    else if (nameCols.includes(c)) width = 168;
-    else if (connectorCols.has(c)) width = 28;
-    else width = 28;
+    if (c === 0 || c === bgEndCol - 1) width = DIMENSIONS.columnWidths.edge;
+    else if (c === seedIdx) width = DIMENSIONS.columnWidths.seed;
+    else if (c === nameIdx) width = DIMENSIONS.columnWidths.mainName;
+    else if (nameCols.includes(c)) width = DIMENSIONS.columnWidths.otherName;
+    else if (connectorCols.has(c)) width = DIMENSIONS.columnWidths.connector;
+    else width = DIMENSIONS.columnWidths.connector;
 
     requests.push({
       updateDimensionProperties: {
@@ -280,7 +281,7 @@ async function buildBracket(auth) {
   }
 
   // 3️⃣.5 Connector borders between player groups
-  const { buildConnectors } = require("./connectors/ConnectorBuilder");
+  const { buildConnectors } = require("./connectors/connector-builder");
   // Only build connectors for non-final rounds to stay within grid
   const connectorRequests = buildConnectors(
     playerGroups.filter((pg) => pg.roundIndex < lastRoundIdx)
@@ -288,10 +289,9 @@ async function buildBracket(auth) {
   requests.push(...connectorRequests);
 
   // 3.5️⃣ Champion styling (replaces final seed)
-  const font = { fontFamily: "Montserrat", bold: true, fontSize: 34 };
   const border = {
     style: "SOLID_MEDIUM",
-    color: { red: 1, green: 0.8588, blue: 0.4627 },
+    color: COLORS.gold,
   };
   // new 6-row merge 2 rows above final
   const champMergeStart = finalRow0 - 2;
@@ -316,22 +316,7 @@ async function buildBracket(auth) {
   const champSeedCell = Number.isFinite(champ.seed)
     ? { userEnteredValue: { numberValue: champ.seed } }
     : { userEnteredValue: { stringValue: "" } };
-  champSeedCell.userEnteredFormat = {
-    backgroundColor: { red: 1, green: 0.8588, blue: 0.4627 },
-    horizontalAlignment: "CENTER",
-    verticalAlignment: "MIDDLE",
-    textFormat: {
-      ...font,
-      fontSize: 34,
-      foregroundColor: { red: 0, green: 0, blue: 0 },
-    },
-    borders: {
-      top: border,
-      bottom: border,
-      left: border,
-      right: border,
-    },
-  };
+  champSeedCell.userEnteredFormat = CELL_FORMATS.championSeed;
   requests.push({
     updateCells: {
       start: { rowIndex: champMergeStart, columnIndex: seedIdx },
@@ -352,21 +337,7 @@ async function buildBracket(auth) {
           values: [
             {
               userEnteredValue: { stringValue: champ.name },
-              userEnteredFormat: {
-                backgroundColor: { red: 0, green: 0, blue: 0 },
-                horizontalAlignment: "CENTER",
-                verticalAlignment: "MIDDLE",
-                textFormat: {
-                  ...font,
-                  foregroundColor: { red: 1, green: 0.8588, blue: 0.4627 },
-                },
-                borders: {
-                  top: border,
-                  bottom: border,
-                  left: border,
-                  right: border,
-                },
-              },
+              userEnteredFormat: CELL_FORMATS.championName,
             },
           ],
         },
@@ -398,16 +369,7 @@ async function buildBracket(auth) {
           values: [
             {
               userEnteredValue: { stringValue: "Champion" },
-              userEnteredFormat: {
-                backgroundColor: gray,
-                horizontalAlignment: "CENTER",
-                verticalAlignment: "MIDDLE",
-                textFormat: {
-                  ...font,
-                  fontSize: 24,
-                  foregroundColor: { red: 1, green: 0.8588, blue: 0.4627 },
-                },
-              },
+              userEnteredFormat: CELL_FORMATS.championHeader,
             },
           ],
         },

@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
 const { google } = require("googleapis");
-const { buildBracket } = require("./src/bracketBuilder");
+const { buildBracket } = require("./src/bracket-builder");
 
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",

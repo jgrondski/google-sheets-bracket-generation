@@ -1,4 +1,6 @@
-// ==================== src/models/PlayerGroup.js ====================
+// ==================== src/models/player-group.js ====================
+
+const { CELL_FORMATS } = require("../styles/styles");
 
 class PlayerGroup {
   constructor(rowStart, colStart, seed, name, score, conType) {
@@ -28,10 +30,6 @@ class PlayerGroup {
 
   // Builds merge & data requests for this group
   toRequests() {
-    const gold = { red: 1, green: 0.8588, blue: 0.4627 };
-    const black = { red: 0, green: 0, blue: 0 };
-    const font = { fontFamily: "Montserrat", bold: true };
-    const border = { style: "SOLID_MEDIUM", width: 2, color: gold };
     const requests = [];
 
     // Merge seed/name/score cells
@@ -64,27 +62,9 @@ class PlayerGroup {
       : { userEnteredValue: { stringValue: "" } };
 
     // Add formatting to each cell
-    seedCell.userEnteredFormat = {
-      backgroundColor: gold,
-      horizontalAlignment: "CENTER",
-      verticalAlignment: "MIDDLE",
-      textFormat: { ...font, fontSize: 11, foregroundColor: black },
-      borders: { top: border, bottom: border, left: border, right: border },
-    };
-    nameCell.userEnteredFormat = {
-      backgroundColor: black,
-      horizontalAlignment: "CENTER",
-      verticalAlignment: "MIDDLE",
-      textFormat: { ...font, fontSize: 12, foregroundColor: gold },
-      borders: { top: border, bottom: border, left: border, right: border },
-    };
-    scoreCell.userEnteredFormat = {
-      backgroundColor: black,
-      horizontalAlignment: "CENTER",
-      verticalAlignment: "MIDDLE",
-      textFormat: { ...font, fontSize: 11, foregroundColor: gold },
-      borders: { top: border, bottom: border, left: border, right: border },
-    };
+    seedCell.userEnteredFormat = CELL_FORMATS.seed;
+    nameCell.userEnteredFormat = CELL_FORMATS.name;
+    scoreCell.userEnteredFormat = CELL_FORMATS.score;
 
     requests.push({
       updateCells: {
@@ -104,34 +84,21 @@ class PlayerGroup {
   // Builds requests for bye positions (just background cells)
   toByeRequests() {
     const requests = [];
-    const gray = { red: 0.192156, green: 0.203922, blue: 0.215686 };
 
     // Create 3 empty cells with gray background (same as bracket background)
     const seedCell = {
       userEnteredValue: { stringValue: "" },
-      userEnteredFormat: {
-        backgroundColor: gray,
-        horizontalAlignment: "CENTER",
-        verticalAlignment: "MIDDLE",
-      },
+      userEnteredFormat: CELL_FORMATS.bye,
     };
 
     const nameCell = {
       userEnteredValue: { stringValue: "" },
-      userEnteredFormat: {
-        backgroundColor: gray,
-        horizontalAlignment: "CENTER",
-        verticalAlignment: "MIDDLE",
-      },
+      userEnteredFormat: CELL_FORMATS.bye,
     };
 
     const scoreCell = {
       userEnteredValue: { stringValue: "" },
-      userEnteredFormat: {
-        backgroundColor: gray,
-        horizontalAlignment: "CENTER",
-        verticalAlignment: "MIDDLE",
-      },
+      userEnteredFormat: CELL_FORMATS.bye,
     };
 
     requests.push({

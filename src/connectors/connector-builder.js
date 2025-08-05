@@ -1,7 +1,8 @@
-// ConnectorBuilder.js
+// connector-builder.js
 // Main connector builder for bracket borders
 
-const { formatBorderRequest } = require("./connectorUtils");
+const { formatBorderRequest } = require("./connector-utils");
+const { COLORS, DIMENSIONS } = require("../styles/styles");
 
 /**
  * Build connector border requests for all rounds
@@ -11,8 +12,8 @@ const { formatBorderRequest } = require("./connectorUtils");
 function buildConnectors(playerGroups) {
   const requests = [];
 
-  const gold = { red: 1, green: 0.8588, blue: 0.4627 };
-  const borderWidth = 2;
+  const gold = COLORS.gold;
+  const borderWidth = DIMENSIONS.connectorBorderWidth;
 
   for (let i = 0; i < playerGroups.length - 1; i += 2) {
     const curGroup = playerGroups[i];
