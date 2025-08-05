@@ -1,15 +1,7 @@
 // ==================== src/styles/dynamic-styles.js ====================
 
-import { hexToRgb, getContrastColor, resolveColorScheme } from "../utils/color-utils.js";
+import { hexToRgb, getContrastColor, resolveColorScheme, FIXED_COLORS } from "../utils/color-utils.js";
 import { FONTS, ALIGNMENT } from "./styles.js";
-
-/**
- * Fixed colors that don't change with color scheme
- */
-const FIXED_COLORS = {
-  black: { red: 0, green: 0, blue: 0 },
-  gray: { red: 0.192156, green: 0.203922, blue: 0.215686 },
-};
 
 /**
  * Generate cell formats dynamically for a given color scheme

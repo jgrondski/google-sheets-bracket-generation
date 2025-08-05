@@ -7,6 +7,7 @@ import _default from "../core/bracket-layout.js";
 const { BracketLayout } = _default;
 import { SpreadsheetCreator } from "../services/spreadsheet-creator.js";
 import { BracketRenderer } from "../services/bracket-renderer.js";
+import { QualsSheetCreator } from "../services/quals-sheet-creator.js";
 import __default from "./command-validator.js";
 const { CommandValidator } = __default;
 
@@ -100,7 +101,12 @@ class BuildBracketCommand {
         await renderer.renderBracketOnSheet(spreadsheet.spreadsheetId, layout, 0, colorScheme);
       }
 
-      console.log("✅ Bracket layout applied successfully");
+      // 6. Create combined Quals sheet
+      const qualsSheetCreator = new QualsSheetCreator(this.auth);
+      await qualsSheetCreator.create(spreadsheet.spreadsheetId, tournament, config);
+      console.log(`✅ Combined Qualifiers sheet created`);
+
+      console.log("✅ Bracket generation complete!");
 
       return {
         success: true,

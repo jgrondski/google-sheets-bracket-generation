@@ -14,8 +14,17 @@ const DEFAULT_COLOR_SCHEMES = {
 };
 
 /**
+ * Fixed colors that don't change with color scheme
+ */
+const FIXED_COLORS = {
+  black: { red: 0, green: 0, blue: 0 },
+  white: { red: 1, green: 1, blue: 1 },
+  gray: { red: 0.192156, green: 0.203922, blue: 0.215686 },
+};
+
+/**
  * Convert hex color to RGB object for Google Sheets API
- * @param {string} hex - Hex color (e.g., "#FFD9B7")
+ * @param {string} hex - Hex color (e.g., "#FFDA75")
  * @returns {Object} RGB object with red, green, blue values (0-1)
  */
 function hexToRgb(hex) {
@@ -88,6 +97,7 @@ function resolveColorScheme(colorScheme) {
 
 export {
   DEFAULT_COLOR_SCHEMES,
+  FIXED_COLORS,
   hexToRgb,
   getLuminance,
   getContrastColor,

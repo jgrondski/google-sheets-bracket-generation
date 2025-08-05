@@ -80,6 +80,24 @@ class GoogleSheetsService {
     });
   }
 
+  async addSheet(spreadsheetId, title) {
+    const { data } = await this.sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            addSheet: {
+              properties: {
+                title,
+              },
+            },
+          },
+        ],
+      },
+    });
+    return data.replies[0].addSheet.properties.sheetId;
+  }
+
   /**
    * Get spreadsheet URL
    * @param {string} spreadsheetId - Spreadsheet ID
