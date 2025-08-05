@@ -100,6 +100,54 @@ class PlayerGroup {
 
     return requests;
   }
+
+  // Builds requests for bye positions (just background cells)
+  toByeRequests() {
+    const requests = [];
+    const gray = { red: 0.192156, green: 0.203922, blue: 0.215686 };
+
+    // Create 3 empty cells with gray background (same as bracket background)
+    const seedCell = {
+      userEnteredValue: { stringValue: "" },
+      userEnteredFormat: {
+        backgroundColor: gray,
+        horizontalAlignment: "CENTER",
+        verticalAlignment: "MIDDLE",
+      },
+    };
+
+    const nameCell = {
+      userEnteredValue: { stringValue: "" },
+      userEnteredFormat: {
+        backgroundColor: gray,
+        horizontalAlignment: "CENTER",
+        verticalAlignment: "MIDDLE",
+      },
+    };
+
+    const scoreCell = {
+      userEnteredValue: { stringValue: "" },
+      userEnteredFormat: {
+        backgroundColor: gray,
+        horizontalAlignment: "CENTER",
+        verticalAlignment: "MIDDLE",
+      },
+    };
+
+    requests.push({
+      updateCells: {
+        start: { rowIndex: this.rowStart, columnIndex: this.colStart },
+        rows: [
+          {
+            values: [seedCell, nameCell, scoreCell],
+          },
+        ],
+        fields: "userEnteredValue,userEnteredFormat",
+      },
+    });
+
+    return requests;
+  }
 }
 
 module.exports = PlayerGroup;

@@ -79,18 +79,63 @@ async function buildBracket(auth) {
 
   // 2️⃣ Prepare requests
   const requests = [];
-  // Build bracket rounds using core bracket builder
-  const { buildBracketData } = require("./bracketBuilderCore");
-  // Convert bracketData to flat player objects for rendering
-  const bracketData = buildBracketData(players);
-  // Flatten matches for each round into player objects (for PlayerGroup rendering)
-  const rounds = bracketData.map((round) => {
-    // For each match, flatten to [{seed, name, score}, {seed, name, score}]
-    return round.flat().map((p) => {
-      if (p) return { seed: p.seed, name: p.name, score: "" };
-      return { seed: "", name: "", score: "" };
+
+  // Use the new CompleteBracket system
+  const { CompleteBracket } = require("./CompleteBracket");
+  const bracket = new CompleteBracket(players.map((p) => ({ name: p.name })));
+
+  console.log(
+    `Building ${bracket.actualPlayerCount}-player bracket (${bracket.bracketSize} bracket size, ${bracket.numByes} byes)`
+  );
+
+  // Convert bracket structure to rounds for rendering
+  let rounds = [];
+
+  // Process each round from the bracket model
+  for (let r = 0; r < bracket.numRounds; r++) {
+    const roundPlayers = [];
+    const allMatches = bracket.getMatchesForRound(r); // Get ALL matches, not just renderable ones
+
+    allMatches.forEach((match) => {
+      const p1 = match.position1;
+      const p2 = match.position2;
+
+      // Add player 1 - always add to maintain bracket structure
+      if (p1 && p1.visible) {
+        if (p1.type === "seeded") {
+          roundPlayers.push({ seed: p1.seed, name: p1.name, score: "" });
+        } else {
+          roundPlayers.push({ seed: "", name: "", score: "" }); // Winner placeholder
+        }
+      } else {
+        // Invisible bye - render as background space but maintain position
+        roundPlayers.push({ seed: "", name: "", score: "", isBye: true });
+      }
+
+      // Add player 2 - always add to maintain bracket structure, handle null case
+      if (p2) {
+        if (p2.visible) {
+          if (p2.type === "seeded") {
+            roundPlayers.push({ seed: p2.seed, name: p2.name, score: "" });
+          } else {
+            roundPlayers.push({ seed: "", name: "", score: "" }); // Winner placeholder
+          }
+        } else {
+          // Invisible bye - render as background space but maintain position
+          roundPlayers.push({ seed: "", name: "", score: "", isBye: true });
+        }
+      } else {
+        // No p2 (shouldn't happen in proper bracket, but handle gracefully)
+        roundPlayers.push({ seed: "", name: "", score: "", isBye: true });
+      }
     });
-  });
+
+    rounds.push(roundPlayers);
+  }
+
+  // Add champion round manually - single position for winner
+  const championRound = [{ seed: "", name: "", score: "" }]; // Champion winner placeholder
+  rounds.push(championRound);
 
   // Champion position overrides for widths & merges
   const lastRoundIdx = rounds.length - 1; // final round
@@ -103,7 +148,7 @@ async function buildBracket(auth) {
   const gray = { red: 0.192156, green: 0.203922, blue: 0.215686 };
   // bottom of last round‑1 group
   const bgEndRow = getPosition(0, rounds[0].length - 1).row + 2;
-  // one col after champion name, just 1 extra at far right
+  // one col after champion name, plus extra for final connectors
   const bgEndCol = nameIdx + 2;
   // Ensure the sheet has enough columns for all formatting
   requests.push({
@@ -181,12 +226,13 @@ async function buildBracket(auth) {
   }
 
   const playerGroups = [];
-  // 3️⃣ Player groups (all rounds except final)
-  for (let r = 0; r < rounds.length - 1; r++) {
+  // 3️⃣ Player groups (include final round for semifinals and finals)
+  for (let r = 0; r < rounds.length; r++) {
     for (let i = 0; i < rounds[r].length; i++) {
       const p = rounds[r][i];
       const { row, col } = getPosition(r, i);
       const conType = i % 2 === 0 ? connectorType.TOP : connectorType.BOTTOM;
+
       // Only set numberValue for valid numbers, otherwise use stringValue or undefined
       let seedValue = {};
       if (typeof p.seed === "number" && !isNaN(p.seed) && p.seed !== "") {
@@ -200,31 +246,45 @@ async function buildBracket(auth) {
       } else {
         scoreValue = { stringValue: "" };
       }
-      // Build PlayerGroup as before
-      const group = new PlayerGroup(
-        row - 1,
-        col - 1,
-        p.seed,
-        p.name,
-        p.score,
-        conType
-      );
-      playerGroups.push(group);
-      // Patch: update toRequests to use correct value types
-      // If PlayerGroup.toRequests expects raw values, this is handled there. If not, update here.
-      requests.push(
-        ...group.toRequests(
-          seedValue,
-          { stringValue: p.name || "" },
-          scoreValue
-        )
-      );
+
+      // Skip PlayerGroup creation entirely for the final round to avoid score cell
+      if (r !== lastRoundIdx) {
+        const group = new PlayerGroup(
+          row - 1,
+          col - 1,
+          p.seed,
+          p.name,
+          p.score,
+          conType
+        );
+        group.roundIndex = r;
+        group.isBye = p.isBye || false; // Mark if this is a bye position
+        playerGroups.push(group);
+
+        // For bye positions, just render background cells (no special styling)
+        if (p.isBye) {
+          // Just background cells - no content, no borders, just gray background
+          requests.push(...group.toByeRequests());
+        } else {
+          // Normal player group rendering
+          requests.push(
+            ...group.toRequests(
+              seedValue,
+              { stringValue: p.name || "" },
+              scoreValue
+            )
+          );
+        }
+      }
     }
   }
 
   // 3️⃣.5 Connector borders between player groups
   const { buildConnectors } = require("./connectors/ConnectorBuilder");
-  const connectorRequests = buildConnectors(playerGroups);
+  // Only build connectors for non-final rounds to stay within grid
+  const connectorRequests = buildConnectors(
+    playerGroups.filter((pg) => pg.roundIndex < lastRoundIdx)
+  );
   requests.push(...connectorRequests);
 
   // 3.5️⃣ Champion styling (replaces final seed)
@@ -236,7 +296,7 @@ async function buildBracket(auth) {
   // new 6-row merge 2 rows above final
   const champMergeStart = finalRow0 - 2;
   const champMergeEnd = champMergeStart + 6;
-  // Merge seed & name
+  // Merge only seed & name (no score cell for champion)
   requests.push(
     ...[seedIdx, nameIdx].map((idx) => ({
       mergeCells: {

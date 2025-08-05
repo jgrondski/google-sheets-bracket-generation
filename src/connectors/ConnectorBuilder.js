@@ -5,7 +5,7 @@ const { formatBorderRequest } = require("./connectorUtils");
 
 /**
  * Build connector border requests for all rounds
-@param {Array} playerGroups - Array of PlayerGroup instances
+ * @param {Array} playerGroups - Array of PlayerGroup instances
  * @returns {Array} Array of Google Sheets API requests for connector borders
  */
 function buildConnectors(playerGroups) {
@@ -17,6 +17,13 @@ function buildConnectors(playerGroups) {
   for (let i = 0; i < playerGroups.length - 1; i += 2) {
     const curGroup = playerGroups[i];
     const nextGroup = playerGroups[i + 1];
+
+    // Skip connectors only if BOTH groups are bye positions
+    // If one is a bye and one is real, we still want connectors
+    if (curGroup.isBye && nextGroup.isBye) {
+      continue;
+    }
+
     // Only process if current group is TOP
     if (curGroup.conType === "TOP") {
       // 4. Set cell at [curGroup.connectorRow, curGroup.connectorCol] to top+right border

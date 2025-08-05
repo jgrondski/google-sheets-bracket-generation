@@ -2,7 +2,7 @@
   "options": {
     "sheetName": "CTWC KC Regional 2025",
     "gold": {
-      "bracketSize": "16",
+      "bracketSize": "27",
       "bracketType": "standard",
       "bracketName": "Gold Bracket"
     }
