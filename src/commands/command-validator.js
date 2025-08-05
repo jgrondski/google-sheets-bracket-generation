@@ -1,6 +1,6 @@
 // ==================== src/commands/command-validator.js ====================
 
-const fs = require('fs');
+import { existsSync, accessSync, constants } from "fs";
 
 /**
  * Validation utilities for commands
@@ -14,14 +14,14 @@ class CommandValidator {
   static validateFilePath(filePath) {
     try {
       if (!filePath) {
-        return { valid: false, error: 'File path is required' };
+        return { valid: false, error: "File path is required" };
       }
 
-      if (!fs.existsSync(filePath)) {
+      if (!existsSync(filePath)) {
         return { valid: false, error: `File does not exist: ${filePath}` };
       }
 
-      fs.accessSync(filePath, fs.constants.R_OK);
+      accessSync(filePath, constants.R_OK);
       return { valid: true };
     } catch (error) {
       return { valid: false, error: `Cannot read file: ${error.message}` };
@@ -35,11 +35,11 @@ class CommandValidator {
    */
   static validateAuth(auth) {
     if (!auth) {
-      return { valid: false, error: 'Authentication client is required' };
+      return { valid: false, error: "Authentication client is required" };
     }
 
-    if (typeof auth.getAccessToken !== 'function') {
-      return { valid: false, error: 'Invalid authentication client' };
+    if (typeof auth.getAccessToken !== "function") {
+      return { valid: false, error: "Invalid authentication client" };
     }
 
     return { valid: true };
@@ -72,7 +72,9 @@ class CommandValidator {
         }
 
         if (rules.maxLength && value.length > rules.maxLength) {
-          errors.push(`${key} must be no more than ${rules.maxLength} characters`);
+          errors.push(
+            `${key} must be no more than ${rules.maxLength} characters`
+          );
         }
 
         if (rules.pattern && !rules.pattern.test(value)) {
@@ -87,7 +89,7 @@ class CommandValidator {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -97,12 +99,15 @@ class CommandValidator {
    * @returns {Object} Validation result
    */
   static validateEnvironment(requiredVars = []) {
-    const missing = requiredVars.filter(varName => !process.env[varName]);
-    
+    const missing = requiredVars.filter((varName) => !process.env[varName]);
+
     return {
       valid: missing.length === 0,
       missing,
-      error: missing.length > 0 ? `Missing environment variables: ${missing.join(', ')}` : null
+      error:
+        missing.length > 0
+          ? `Missing environment variables: ${missing.join(", ")}`
+          : null,
     };
   }
 
@@ -123,11 +128,13 @@ class CommandValidator {
           allErrors.push(`${category}: ${result.error}`);
         }
         if (result.errors) {
-          allErrors.push(...result.errors.map(err => `${category}: ${err}`));
+          allErrors.push(...result.errors.map((err) => `${category}: ${err}`));
         }
       }
       if (result.warnings) {
-        allWarnings.push(...result.warnings.map(warn => `${category}: ${warn}`));
+        allWarnings.push(
+          ...result.warnings.map((warn) => `${category}: ${warn}`)
+        );
       }
     });
 
@@ -135,9 +142,11 @@ class CommandValidator {
       valid: isValid,
       errors: allErrors,
       warnings: allWarnings,
-      summary: isValid ? 'All validations passed' : `${allErrors.length} validation errors found`
+      summary: isValid
+        ? "All validations passed"
+        : `${allErrors.length} validation errors found`,
     };
   }
 }
 
-module.exports = { CommandValidator };
+export default { CommandValidator };

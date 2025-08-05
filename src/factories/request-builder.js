@@ -1,6 +1,6 @@
 // ==================== src/factories/request-builder.js ====================
 
-const { COLORS, CELL_FORMATS, DIMENSIONS } = require('../styles/styles');
+import { COLORS, CELL_FORMATS, DIMENSIONS } from "../styles/styles.js";
 
 /**
  * Factory for building Google Sheets API requests
@@ -13,19 +13,21 @@ class RequestBuilder {
    * @returns {Array} Array of requests
    */
   createBackgroundRequest(endRow, endCol) {
-    return [{
-      repeatCell: {
-        range: {
-          sheetId: 0,
-          startRowIndex: 0,
-          endRowIndex: endRow,
-          startColumnIndex: 0,
-          endColumnIndex: endCol,
+    return [
+      {
+        repeatCell: {
+          range: {
+            sheetId: 0,
+            startRowIndex: 0,
+            endRowIndex: endRow,
+            startColumnIndex: 0,
+            endColumnIndex: endCol,
+          },
+          cell: { userEnteredFormat: CELL_FORMATS.background },
+          fields: "userEnteredFormat.backgroundColor",
         },
-        cell: { userEnteredFormat: CELL_FORMATS.background },
-        fields: "userEnteredFormat.backgroundColor",
       },
-    }];
+    ];
   }
 
   /**
@@ -35,7 +37,7 @@ class RequestBuilder {
    */
   createRowDimensionRequests(rowCount) {
     const requests = [];
-    
+
     for (let r = 0; r < rowCount; r++) {
       requests.push({
         updateDimensionProperties: {
@@ -63,7 +65,13 @@ class RequestBuilder {
    * @param {Set} connectorCols - Set of connector column indices
    * @returns {Array} Array of requests
    */
-  createColumnDimensionRequests(colCount, seedIdx, nameIdx, nameCols, connectorCols) {
+  createColumnDimensionRequests(
+    colCount,
+    seedIdx,
+    nameIdx,
+    nameCols,
+    connectorCols
+  ) {
     const requests = [];
 
     for (let c = 0; c < colCount; c++) {
@@ -106,7 +114,8 @@ class RequestBuilder {
    */
   createChampionRequests(championPos) {
     const requests = [];
-    const { champion, champMergeStart, champMergeEnd, seedIdx, nameIdx } = championPos;
+    const { champion, champMergeStart, champMergeEnd, seedIdx, nameIdx } =
+      championPos;
 
     // Create merge requests for seed and name cells
     const mergeRequests = [seedIdx, nameIdx].map((idx) => ({
@@ -193,4 +202,4 @@ class RequestBuilder {
   }
 }
 
-module.exports = { RequestBuilder };
+export default { RequestBuilder };

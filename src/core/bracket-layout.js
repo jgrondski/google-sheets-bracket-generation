@@ -1,6 +1,6 @@
 // ==================== src/core/bracket-layout.js ====================
 
-const { getPosition } = require('../utils/math-utils');
+import { getPosition } from "../utils/math-utils.js";
 
 /**
  * Core bracket layout calculations and positioning logic
@@ -100,7 +100,7 @@ class BracketLayout {
    */
   calculateColumnConfig() {
     const nameCols = this.rounds.map((_, r) => getPosition(r, 0).col - 1 + 1); // actual name columns
-    
+
     // Build a set of connector columns (two after each name col except last round)
     const connectorCols = new Set();
     for (let r = 0; r < this.rounds.length - 1; r++) {
@@ -122,7 +122,7 @@ class BracketLayout {
   getChampionPosition() {
     const bounds = this.calculateGridBounds();
     const championRound = this.rounds[this.rounds.length - 1];
-    
+
     // new 6-row merge 2 rows above final
     const champMergeStart = bounds.finalRow0 - 2;
     const champMergeEnd = champMergeStart + 6;
@@ -153,4 +153,4 @@ class BracketLayout {
   }
 }
 
-module.exports = { BracketLayout };
+export default { BracketLayout };

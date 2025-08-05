@@ -1,8 +1,8 @@
 // connector-builder.js
 // Main connector builder for bracket borders
 
-const { formatBorderRequest } = require("./connector-utils");
-const { COLORS, DIMENSIONS } = require("../styles/styles");
+import { formatBorderRequest } from "./connector-utils.js";
+import { COLORS, DIMENSIONS } from "../styles/styles.js";
 
 /**
  * Build connector border requests for all rounds
@@ -78,4 +78,4 @@ function buildConnectors(playerGroups) {
   return requests;
 }
 
-module.exports = { buildConnectors };
+export default { buildConnectors };

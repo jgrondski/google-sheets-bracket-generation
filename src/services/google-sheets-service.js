@@ -1,6 +1,6 @@
 // ==================== src/services/google-sheets-service.js ====================
 
-const { google } = require('googleapis');
+import { google } from "googleapis";
 
 /**
  * Service for Google Sheets API operations
@@ -8,8 +8,8 @@ const { google } = require('googleapis');
 class GoogleSheetsService {
   constructor(auth) {
     this.auth = auth;
-    this.sheets = google.sheets({ version: 'v4', auth });
-    this.drive = google.drive({ version: 'v3', auth });
+    this.sheets = google.sheets({ version: "v4", auth });
+    this.drive = google.drive({ version: "v3", auth });
   }
 
   /**
@@ -21,7 +21,7 @@ class GoogleSheetsService {
   async createSpreadsheet(title, folderId = null) {
     const resource = {
       name: title,
-      mimeType: 'application/vnd.google-apps.spreadsheet',
+      mimeType: "application/vnd.google-apps.spreadsheet",
     };
 
     if (folderId) {
@@ -30,7 +30,7 @@ class GoogleSheetsService {
 
     const file = await this.drive.files.create({
       resource,
-      fields: 'id',
+      fields: "id",
     });
 
     return file.data.id;
@@ -54,7 +54,7 @@ class GoogleSheetsService {
                 sheetId,
                 title: newName,
               },
-              fields: 'title',
+              fields: "title",
             },
           },
         ],
@@ -70,7 +70,7 @@ class GoogleSheetsService {
    */
   async batchUpdate(spreadsheetId, requests) {
     if (!requests || requests.length === 0) {
-      console.log('No requests to apply');
+      console.log("No requests to apply");
       return;
     }
 
@@ -97,15 +97,17 @@ class GoogleSheetsService {
    * @returns {Promise<void>}
    */
   async updateSheetProperties(spreadsheetId, sheetId, properties) {
-    const requests = [{
-      updateSheetProperties: {
-        properties: {
-          sheetId,
-          ...properties,
+    const requests = [
+      {
+        updateSheetProperties: {
+          properties: {
+            sheetId,
+            ...properties,
+          },
+          fields: Object.keys(properties).join(","),
         },
-        fields: Object.keys(properties).join(','),
       },
-    }];
+    ];
 
     await this.batchUpdate(spreadsheetId, requests);
   }
@@ -124,4 +126,5 @@ class GoogleSheetsService {
   }
 }
 
-module.exports = { GoogleSheetsService };
+export { GoogleSheetsService };
+export default { GoogleSheetsService };

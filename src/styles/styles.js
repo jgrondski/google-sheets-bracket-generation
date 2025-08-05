@@ -158,7 +158,7 @@ const DIMENSIONS = {
   connectorBorderWidth: 2,
 };
 
-module.exports = {
+export {
   COLORS,
   FONTS,
   BORDERS,

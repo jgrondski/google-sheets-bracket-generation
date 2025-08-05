@@ -1,6 +1,6 @@
 // ==================== src/models/player-group.js ====================
 
-const { CELL_FORMATS } = require("../styles/styles");
+import { CELL_FORMATS } from "../styles/styles.js";
 
 class PlayerGroup {
   constructor(rowStart, colStart, seed, name, score, conType) {
@@ -117,4 +117,4 @@ class PlayerGroup {
   }
 }
 
-module.exports = PlayerGroup;
+export default PlayerGroup;

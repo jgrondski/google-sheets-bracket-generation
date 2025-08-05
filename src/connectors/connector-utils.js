@@ -49,4 +49,4 @@ function formatBorderRequest(row, col, borders, color, width = 2) {
   };
 }
 
-module.exports = { a1ToRowCol, formatBorderRequest };
+export { a1ToRowCol, formatBorderRequest };

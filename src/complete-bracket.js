@@ -300,4 +300,4 @@ class CompleteBracket {
   }
 }
 
-module.exports = { CompleteBracket, BracketPosition };
+export { CompleteBracket, BracketPosition };

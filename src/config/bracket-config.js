@@ -1,7 +1,7 @@
 // ==================== src/config/bracket-config.js ====================
 
-const fs = require('fs');
-const path = require('path');
+import { readFileSync } from "fs";
+import { resolve } from "path";
 
 /**
  * Configuration manager for bracket generation
@@ -19,13 +19,15 @@ class BracketConfig {
    */
   static fromFile(filePath) {
     try {
-      const fullPath = path.resolve(filePath);
-      const content = fs.readFileSync(fullPath, 'utf8');
+      const fullPath = resolve(filePath);
+      const content = readFileSync(fullPath, "utf8");
       const data = JSON.parse(content);
-      
+
       return new BracketConfig(data.options, data.players);
     } catch (error) {
-      throw new Error(`Failed to load bracket configuration from ${filePath}: ${error.message}`);
+      throw new Error(
+        `Failed to load bracket configuration from ${filePath}: ${error.message}`
+      );
     }
   }
 
@@ -34,7 +36,7 @@ class BracketConfig {
    * @returns {string} Sheet name
    */
   getSheetName() {
-    return this.options?.sheetName || 'Tournament Bracket';
+    return this.options?.sheetName || "Tournament Bracket";
   }
 
   /**
@@ -68,7 +70,7 @@ class BracketConfig {
    * @returns {string} Bracket name
    */
   getBracketName() {
-    return this.getBracketConfig().bracketName || 'Bracket';
+    return this.getBracketConfig().bracketName || "Bracket";
   }
 
   /**
@@ -76,7 +78,7 @@ class BracketConfig {
    * @returns {string} Bracket type
    */
   getBracketType() {
-    return this.getBracketConfig().bracketType || 'standard';
+    return this.getBracketConfig().bracketType || "standard";
   }
 
   /**
@@ -85,13 +87,11 @@ class BracketConfig {
    */
   getPlayers() {
     const bracketSize = this.getBracketSize();
-    return this.players
-      .slice(0, bracketSize)
-      .map((player, index) => ({
-        seed: index + 1,
-        name: player.name,
-        ...player
-      }));
+    return this.players.slice(0, bracketSize).map((player, index) => ({
+      seed: index + 1,
+      name: player.name,
+      ...player,
+    }));
   }
 
   /**
@@ -110,33 +110,35 @@ class BracketConfig {
     const errors = [];
 
     if (!this.options) {
-      errors.push('Missing options configuration');
+      errors.push("Missing options configuration");
     }
 
     if (!this.players || !Array.isArray(this.players)) {
-      errors.push('Missing or invalid players array');
+      errors.push("Missing or invalid players array");
     }
 
     if (this.players && this.players.length === 0) {
-      errors.push('No players configured');
+      errors.push("No players configured");
     }
 
     const bracketSize = this.getBracketSize();
     if (bracketSize < 2) {
-      errors.push('Bracket size must be at least 2');
+      errors.push("Bracket size must be at least 2");
     }
 
     // Note: We don't require bracket size to be a power of 2
     // The system will automatically expand to the next power of 2
 
     if (this.players && this.players.length > bracketSize) {
-      console.warn(`Warning: ${this.players.length} players configured but bracket size is ${bracketSize}. Extra players will be ignored.`);
+      console.warn(
+        `Warning: ${this.players.length} players configured but bracket size is ${bracketSize}. Extra players will be ignored.`
+      );
     }
 
     // Check for players without names
     if (this.players) {
       this.players.forEach((player, index) => {
-        if (!player.name || player.name.trim() === '') {
+        if (!player.name || player.name.trim() === "") {
           errors.push(`Player at index ${index} is missing a name`);
         }
       });
@@ -162,4 +164,5 @@ class BracketConfig {
   }
 }
 
-module.exports = { BracketConfig };
+export { BracketConfig };
+export default { BracketConfig };

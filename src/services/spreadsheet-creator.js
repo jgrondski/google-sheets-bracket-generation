@@ -1,6 +1,6 @@
 // ==================== src/services/spreadsheet-creator.js ====================
 
-const { GoogleSheetsService } = require('./google-sheets-service');
+import { GoogleSheetsService } from "./google-sheets-service.js";
 
 /**
  * Service for creating and setting up spreadsheets for brackets
@@ -30,7 +30,7 @@ class SpreadsheetCreator {
     await this.sheetsService.renameSheet(spreadsheetId, 0, bracketName);
 
     const url = this.sheetsService.getSpreadsheetUrl(spreadsheetId);
-    
+
     console.log(`✅ Spreadsheet created: ${url}`);
 
     return {
@@ -53,4 +53,5 @@ class SpreadsheetCreator {
   }
 }
 
-module.exports = { SpreadsheetCreator };
+export { SpreadsheetCreator };
+export default { SpreadsheetCreator };

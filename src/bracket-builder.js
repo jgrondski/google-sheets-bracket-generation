@@ -2,7 +2,8 @@
 // This file is maintained for backward compatibility
 // New development should use the modular architecture in src/commands/
 
-const { buildBracket: newBuildBracket } = require('./commands/build-bracket-command');
+import buildBracketCommand from "./commands/build-bracket-command.js";
+const { buildBracket: newBuildBracket } = buildBracketCommand;
 
 /**
  * Legacy buildBracket function - redirects to new modular implementation
@@ -13,4 +14,4 @@ async function buildBracket(auth) {
   return await newBuildBracket(auth);
 }
 
-module.exports = { buildBracket };
+export default { buildBracket };

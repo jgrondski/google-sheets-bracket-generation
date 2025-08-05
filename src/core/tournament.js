@@ -1,8 +1,8 @@
 // ==================== src/core/tournament.js ====================
 
-const { CompleteBracket } = require('../complete-bracket');
-const { nextPowerOfTwo, calculateRounds } = require('../utils/math-utils');
-const { BracketValidator } = require('./bracket-validator');
+import { CompleteBracket } from "../complete-bracket.js";
+import bracketValidatorDefault from "./bracket-validator.js";
+const { BracketValidator } = bracketValidatorDefault;
 
 /**
  * Core tournament logic and bracket management
@@ -20,7 +20,9 @@ class Tournament {
    */
   createBracket() {
     // Convert players to the format expected by CompleteBracket
-    const bracketPlayers = this.players.map(player => ({ name: player.name }));
+    const bracketPlayers = this.players.map((player) => ({
+      name: player.name,
+    }));
     return new CompleteBracket(bracketPlayers);
   }
 
@@ -76,7 +78,9 @@ class Tournament {
     errors.push(...configErrors);
 
     // Validate bracket structure
-    const bracketErrors = BracketValidator.validateBracketStructure(this.bracket);
+    const bracketErrors = BracketValidator.validateBracketStructure(
+      this.bracket
+    );
     errors.push(...bracketErrors);
 
     // Validate seeding
@@ -91,7 +95,7 @@ class Tournament {
    * @returns {string} Tournament type (e.g., 'single-elimination')
    */
   getType() {
-    return 'single-elimination'; // For now, only support single elimination
+    return "single-elimination"; // For now, only support single elimination
   }
 
   /**
@@ -103,4 +107,5 @@ class Tournament {
   }
 }
 
-module.exports = { Tournament };
+export { Tournament };
+export default { Tournament };

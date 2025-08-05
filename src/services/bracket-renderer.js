@@ -1,9 +1,10 @@
 // ==================== src/services/bracket-renderer.js ====================
 
-const { GoogleSheetsService } = require('./google-sheets-service');
-const { RequestBuilder } = require('../factories/request-builder');
-const PlayerGroup = require('../models/player-group');
-const { getPosition } = require('../utils/math-utils');
+import { GoogleSheetsService } from "./google-sheets-service.js";
+import RequestBuilderDefault from "../factories/request-builder.js";
+const { RequestBuilder } = RequestBuilderDefault;
+import PlayerGroup from "../models/player-group.js";
+import { getPosition } from "../utils/math-utils.js";
 
 /**
  * Service for rendering bracket layouts to Google Sheets
@@ -50,7 +51,7 @@ class BracketRenderer {
     requests.push(...playerGroupRequests);
 
     // 5. Create connector borders
-    const connectorRequests = this.createConnectorRequests(layout);
+    const connectorRequests = await this.createConnectorRequests(layout);
     requests.push(...connectorRequests);
 
     // 6. Create champion styling
@@ -86,7 +87,9 @@ class BracketRenderer {
     const requests = [];
 
     // Row dimensions
-    const rowRequests = this.requestBuilder.createRowDimensionRequests(bounds.bgEndRow);
+    const rowRequests = this.requestBuilder.createRowDimensionRequests(
+      bounds.bgEndRow
+    );
     requests.push(...rowRequests);
 
     // Column dimensions
@@ -149,7 +152,9 @@ class BracketRenderer {
             const nameValue = { stringValue: p.name || "" };
             const scoreValue = this.prepareValueObject(p.score);
 
-            requests.push(...group.toRequests(seedValue, nameValue, scoreValue));
+            requests.push(
+              ...group.toRequests(seedValue, nameValue, scoreValue)
+            );
           }
         }
       }
@@ -166,12 +171,15 @@ class BracketRenderer {
    * @param {BracketLayout} layout - Bracket layout
    * @returns {Array} Array of requests
    */
-  createConnectorRequests(layout) {
-    const { buildConnectors } = require('../connectors/connector-builder');
+  async createConnectorRequests(layout) {
+    const connectorBuilder = await import("../connectors/connector-builder.js");
+    const { buildConnectors } = connectorBuilder.default;
     const lastRoundIdx = layout.getLastRoundIndex();
-    
+
     // Only build connectors for non-final rounds
-    const filteredGroups = this.playerGroups.filter(pg => pg.roundIndex < lastRoundIdx);
+    const filteredGroups = this.playerGroups.filter(
+      (pg) => pg.roundIndex < lastRoundIdx
+    );
     return buildConnectors(filteredGroups);
   }
 
@@ -199,4 +207,5 @@ class BracketRenderer {
   }
 }
 
-module.exports = { BracketRenderer };
+export { BracketRenderer };
+export default { BracketRenderer };

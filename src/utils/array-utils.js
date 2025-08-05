@@ -86,7 +86,7 @@ function flatten(array, depth = 1) {
   }, []);
 }
 
-module.exports = {
+export {
   chunk,
   shuffle,
   groupBy,
