@@ -35,7 +35,10 @@ src/
 │   ├── math-utils.js
 │   └── array-utils.js
 ├── models/            # Data models (existing)
-├── styles/            # Styling definitions (existing)
+├── styles/            # Dynamic styling system
+│   ├── styles.js           # Main styles interface
+│   ├── dynamic-styles.js   # Dynamic color generation
+│   └── color-utils.js      # Color manipulation utilities
 ├── connectors/        # Connector logic (existing)
 ├── data/             # Configuration data (existing)
 └── bracket-builder.js # Legacy compatibility wrapper
@@ -48,6 +51,34 @@ src/
 - **Services**: Handle external system integrations (Google Sheets API)
 - **Commands**: Orchestrate the application flow
 - **Config**: Handle configuration parsing and validation
+
+### Dynamic Color System
+
+The styling system has been refactored to support dynamic color generation from any hex color input:
+
+#### Architecture Overview
+- **`color-utils.js`**: Core color manipulation utilities (hex-to-RGB, luminance, contrast)
+- **`dynamic-styles.js`**: Generates complete style sets from any color input
+- **`styles.js`**: Simplified interface that maintains backward compatibility
+
+#### Key Features
+- **Dynamic Generation**: Replaces ~200 lines of hardcoded color variants with ~50 lines of dynamic logic
+- **Custom Colors**: Users can specify any hex color (`#FF5733`) without code changes
+- **Preset Support**: Maintains built-in presets (`"gold"`, `"silver"`) for backward compatibility
+- **Smart Contrast**: Automatically calculates readable text colors based on background luminance
+- **Border Generation**: Creates harmonious border colors based on the primary color
+
+#### Color Flow
+```
+User Config → resolveColorScheme() → generateCellFormats() → Google Sheets API
+     ↓              ↓                      ↓
+"#FF5733"  →  RGB values  →  Complete style object  →  Rendered bracket
+```
+
+#### Backward Compatibility
+- Existing configurations without `colorScheme` use bracket type as default color
+- All existing APIs remain unchanged
+- Gold/silver presets preserved for legacy support
 - **Utils**: Pure, reusable utility functions
 
 ### Testability

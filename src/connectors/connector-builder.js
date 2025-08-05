@@ -2,7 +2,8 @@
 // Main connector builder for bracket borders
 
 import { formatBorderRequest } from "./connector-utils.js";
-import { COLORS, DIMENSIONS } from "../styles/styles.js";
+import { getConnectorColor } from "../styles/dynamic-styles.js";
+import { DIMENSIONS } from "../styles/styles.js";
 
 /**
  * Build connector border requests for all rounds
@@ -14,7 +15,7 @@ import { COLORS, DIMENSIONS } from "../styles/styles.js";
 function buildConnectors(playerGroups, sheetId = 0, colorScheme = "gold") {
   const requests = [];
 
-  const connectorColor = colorScheme === "silver" ? COLORS.silver : COLORS.gold;
+  const connectorColor = getConnectorColor(colorScheme);
   const borderWidth = DIMENSIONS.connectorBorderWidth;
 
   for (let i = 0; i < playerGroups.length - 1; i += 2) {

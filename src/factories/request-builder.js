@@ -1,6 +1,6 @@
 // ==================== src/factories/request-builder.js ====================
 
-import { COLORS, getCellFormats, DIMENSIONS } from "../styles/styles.js";
+import { getCellFormats, DIMENSIONS } from "../styles/styles.js";
 
 /**
  * Factory for building Google Sheets API requests

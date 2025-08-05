@@ -88,7 +88,7 @@ class BuildBracketCommand {
 
       // 5. Handle rendering based on tournament type
       if (isMultiBracket) {
-        await this.renderMultiSheetTournament(spreadsheet, tournament);
+        await this.renderMultiSheetTournament(spreadsheet, tournament, config);
       } else {
         // 5a. Generate bracket layout for single bracket
         const layout = new BracketLayout(tournament);
@@ -121,8 +121,9 @@ class BuildBracketCommand {
    * Render multiple brackets to separate sheets in the same spreadsheet
    * @param {Object} spreadsheet - The multi-bracket spreadsheet info
    * @param {MultiBracketTournament} multiBracketTournament - The multi-bracket tournament
+   * @param {BracketConfig} config - The bracket configuration
    */
-  async renderMultiSheetTournament(spreadsheet, multiBracketTournament) {
+  async renderMultiSheetTournament(spreadsheet, multiBracketTournament, config) {
     const renderer = new BracketRenderer(this.auth);
     const bracketTypes = multiBracketTournament.getBracketTypes();
 
@@ -138,12 +139,13 @@ class BuildBracketCommand {
       const sheetInfo = spreadsheet.sheets[bracketType];
 
       // Render this bracket to its dedicated sheet
-      // Use bracketType (gold/silver) as the color scheme
+      // Get the color scheme from bracket configuration
+      const colorScheme = config.getColorSchemeByCategory(bracketType);
       await renderer.renderBracketOnSheet(
         spreadsheet.spreadsheetId,
         layout,
         sheetInfo.sheetId,
-        bracketType // bracketType here is the bracket identifier (gold/silver), used as colorScheme
+        colorScheme
       );
 
       console.log(

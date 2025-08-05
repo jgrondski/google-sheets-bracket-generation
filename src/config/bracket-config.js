@@ -119,6 +119,16 @@ class BracketConfig {
   }
 
   /**
+   * Get color scheme by bracket category
+   * @param {string} bracketType - 'gold' or 'silver'
+   * @returns {string} Color scheme (preset name or hex color)
+   */
+  getColorSchemeByCategory(bracketType = "gold") {
+    const bracketConfig = this.getBracketConfigByType(bracketType);
+    return bracketConfig.colorScheme || bracketType; // Default to bracket type as color scheme
+  }
+
+  /**
    * Get the actual tournament bracket size (next power of 2)
    * @returns {number} Actual bracket size (power of 2)
    */
