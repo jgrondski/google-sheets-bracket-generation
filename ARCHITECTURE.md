@@ -1,6 +1,14 @@
 # Architecture Refactor
 
-This directory contains the refactored, modular architecture for the bracket generation system.
+This directory contains the refactored, modular architecture for the bracket generation system using ES6 modules.
+
+## Module System
+
+This project uses **ES6 modules** (`import`/`export`) instead of CommonJS (`require`/`module.exports`). Key benefits:
+- **Static analysis**: Better IDE support and tree-shaking
+- **Explicit imports**: Clear dependency relationships
+- **Modern standard**: Aligns with current JavaScript best practices
+- **Future-proof**: Native browser and Node.js support
 
 ## Directory Structure
 
@@ -56,7 +64,8 @@ src/
 
 ### New Modular Approach
 ```javascript
-const { BuildBracketCommand } = require('./src/commands/build-bracket-command');
+import buildBracketCommandDefault from './src/commands/build-bracket-command.js';
+const { BuildBracketCommand } = buildBracketCommandDefault;
 
 async function generateBracket(auth) {
   const command = new BuildBracketCommand(auth);
@@ -72,7 +81,8 @@ async function generateBracket(auth) {
 
 ### Legacy Compatibility
 ```javascript
-const { buildBracket } = require('./src/bracket-builder');
+import bracketBuilder from './src/bracket-builder.js';
+const { buildBracket } = bracketBuilder;
 
 // This still works exactly as before
 await buildBracket(auth);
@@ -80,9 +90,10 @@ await buildBracket(auth);
 
 ### Using Individual Components
 ```javascript
-const { BracketConfig } = require('./src/config/bracket-config');
-const { Tournament } = require('./src/core/tournament');
-const { BracketValidator } = require('./src/core/bracket-validator');
+import { BracketConfig } from './src/config/bracket-config.js';
+import { Tournament } from './src/core/tournament.js';
+import bracketValidatorDefault from './src/core/bracket-validator.js';
+const { BracketValidator } = bracketValidatorDefault;
 
 // Load and validate configuration
 const config = BracketConfig.fromFile('./config.json');
@@ -108,6 +119,11 @@ if (errors.length === 0) {
 3. **Extensibility**: Easy to add new bracket types or output formats
 4. **Debugging**: Easier to isolate issues to specific layers
 5. **Reusability**: Core bracket logic could work with other output systems
+6. **Modern ES6 Modules**: 
+   - Static imports enable better IDE support and error detection
+   - Tree-shaking capabilities for optimized builds
+   - Explicit dependency management
+   - Native browser and Node.js support
 
 ## Next Steps
 

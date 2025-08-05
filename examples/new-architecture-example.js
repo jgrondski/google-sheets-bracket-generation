@@ -5,12 +5,13 @@
  * Run this after setting up Google OAuth credentials
  */
 
-import { BuildBracketCommand } from "../src/commands/build-bracket-command";
-import BracketFactoryDefault from "../src/factories/bracket-factory";
+import buildBracketCommandDefault from "../src/commands/build-bracket-command.js";
+const { BuildBracketCommand } = buildBracketCommandDefault;
+import BracketFactoryDefault from "../src/factories/bracket-factory.js";
 const { BracketFactory } = BracketFactoryDefault;
-import _default from "../src/config/bracket-config";
+import _default from "../src/config/bracket-config.js";
 const { BracketConfig } = _default;
-import __default from "../src/core/bracket-validator";
+import __default from "../src/core/bracket-validator.js";
 const { BracketValidator } = __default;
 
 async function exampleUsage() {
@@ -88,8 +89,8 @@ async function exampleUsage() {
   }
 }
 
-// Run if called directly
-if (require.main === module) {
+// Run if called directly (ES6 module equivalent)
+if (import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
   exampleUsage();
 }
 

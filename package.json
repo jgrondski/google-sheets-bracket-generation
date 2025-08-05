@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "example": "node examples/new-architecture-example.js",
-    "validate-config": "node -e \"const {BracketConfig} = require('./src/config/bracket-config'); const config = BracketConfig.fromFile('./src/data/playerlist.json'); console.log('Config Summary:', config.getSummary()); const errors = config.validate(); console.log('Validation:', errors.length === 0 ? 'PASSED' : 'ERRORS: ' + errors.join(', '));\"",
+    "validate-config": "node -e \"import('./src/config/bracket-config.js').then(({BracketConfig}) => { const config = BracketConfig.fromFile('./src/data/playerlist.json'); console.log('Config Summary:', config.getSummary()); const errors = config.validate(); console.log('Validation:', errors.length === 0 ? 'PASSED' : 'ERRORS: ' + errors.join(', ')); });\"",
     "start": "node index.js"
   },
   "repository": {
