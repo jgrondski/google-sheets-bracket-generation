@@ -83,7 +83,7 @@ Before getting started, make sure you have:
 
 - **[Node.js](https://nodejs.org/)** (version 16 or higher)
   - Download from [nodejs.org](https://nodejs.org/)
-  - Verify installation (works on all platforms):
+  - Verify installation:
     ```bash
     node --version
     npm --version
@@ -104,47 +104,7 @@ Before getting started, make sure you have:
 
 - **Internet connection** (required for Google Sheets API)
 - **Terminal/Command Prompt** access
-  - **Mac/Linux**: Terminal app
-  - **Windows**: Command Prompt, PowerShell, or Git Bash
 - **Web browser** (for Google OAuth authentication)
-
-## Quick Start
-
-1. **Clone this repository**
-
-   Using Git (Mac/Linux/Windows):
-
-   ```bash
-   git clone https://github.com/jgrondski/google-sheets-bracket-generation.git
-   cd google-sheets-bracket-generation
-   ```
-
-   Using Windows Command Prompt:
-
-   ```cmd
-   git clone https://github.com/jgrondski/google-sheets-bracket-generation.git
-   cd google-sheets-bracket-generation
-   ```
-
-2. **Install dependencies**
-
-   All platforms:
-
-   ```bash
-   npm install
-   ```
-
-3. **Set up Google API credentials** (see setup guide below)
-
-4. **Configure your tournament** in `bracket-data.json`
-
-5. **Run the generator**
-
-   All platforms:
-
-   ```bash
-   npm start
-   ```
 
 ## Google API Setup
 
@@ -277,9 +237,9 @@ This creates `bracket-data.json` automatically with all your players in the corr
   "players": [
     { "name": "Top Player" },
     { "name": "Second Player" }
-    // ... up to 32 players total
-    // First 16 go to gold bracket
-    // Next 16 go to silver bracket
+    // ... add as many players as needed
+    // First 16 players → gold bracket
+    // Next 16 players → silver bracket
   ]
 }
 ```
@@ -304,15 +264,11 @@ This creates `bracket-data.json` automatically with all your players in the corr
 
 ### Generate Tournament
 
-All platforms:
-
 ```bash
 npm start
 ```
 
 ### Validate Configuration (without generating)
-
-All platforms:
 
 ```bash
 npm run validate-config
@@ -320,15 +276,7 @@ npm run validate-config
 
 ### Alternative Commands
 
-Direct Node execution (Mac/Linux/Windows):
-
 ```bash
-node app.js
-```
-
-Direct Node execution (Windows Command Prompt):
-
-```cmd
 node app.js
 ```
 
