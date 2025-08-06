@@ -100,7 +100,7 @@ const { BuildBracketCommand } = buildBracketCommandDefault;
 
 async function generateBracket(auth) {
   const command = new BuildBracketCommand(auth);
-  const result = await command.execute('./src/data/playerlist.json');
+  const result = await command.execute('./bracket-data.json');
   
   if (result.success) {
     console.log('Bracket created:', result.spreadsheet.url);

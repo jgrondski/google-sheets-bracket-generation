@@ -2,6 +2,8 @@
 
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import { Player } from "../models/player.js";
+import { TournamentRepository } from "../data-access/tournament-repository.js";
 
 /**
  * Configuration manager for bracket generation
@@ -155,11 +157,20 @@ class BracketConfig {
 
   /**
    * Get players limited to bracket size
-   * @returns {Array} Array of player objects
+   * @param {boolean} asDomainObjects - Whether to return Player domain objects
+   * @returns {Array} Array of player objects or Player instances
    */
-  getPlayers() {
+  getPlayers(asDomainObjects = false) {
     const bracketSize = this.getBracketSize();
-    return this.players.slice(0, bracketSize).map((player, index) => ({
+    const rawPlayers = this.players.slice(0, bracketSize);
+    
+    if (asDomainObjects) {
+      return rawPlayers.map((player, index) => 
+        Player.fromJson(player, index + 1, 'gold')
+      );
+    }
+    
+    return rawPlayers.map((player, index) => ({
       seed: index + 1,
       name: player.name,
       ...player,
@@ -169,11 +180,12 @@ class BracketConfig {
   /**
    * Get players for a specific bracket type
    * @param {string} bracketType - 'gold' or 'silver'
+   * @param {boolean} asDomainObjects - Whether to return Player domain objects
    * @returns {Array} Array of player objects for the specified bracket
    */
-  getPlayersByType(bracketType = "gold") {
+  getPlayersByType(bracketType = "gold", asDomainObjects = false) {
     if (bracketType === "gold") {
-      return this.getPlayers(); // Use existing logic for gold bracket
+      return this.getPlayers(asDomainObjects); // Use existing logic for gold bracket
     }
 
     if (bracketType === "silver") {
@@ -186,6 +198,12 @@ class BracketConfig {
         startIndex,
         startIndex + silverBracketSize
       );
+
+      if (asDomainObjects) {
+        return silverPlayers.map((player, index) => 
+          Player.fromJson(player, index + 1, 'silver')
+        );
+      }
 
       return silverPlayers.map((player, index) => ({
         seed: index + 1,
@@ -315,6 +333,29 @@ class BracketConfig {
       bracketSize: this.getBracketSize(),
       actualBracketSize: this.getActualBracketSize(),
       playerCount: this.getPlayers().length,
+    };
+  }
+
+  /**
+   * Create a TournamentRepository from this configuration
+   * This provides access to the new data access layer
+   * @returns {TournamentRepository}
+   */
+  createRepository() {
+    // For now, create a repository that wraps this BracketConfig's data
+    // In the future, this could be enhanced to create different repository types
+    return TournamentRepository.fromFile(this.configPath || './bracket-data.json');
+  }
+
+  /**
+   * Get data access compatible format
+   * @returns {Object} Configuration in data access layer format
+   */
+  toDataAccessFormat() {
+    return {
+      sheetName: this.getSheetName(),
+      brackets: this.options,
+      players: this.getAllPlayers()
     };
   }
 }

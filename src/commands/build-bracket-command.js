@@ -24,7 +24,7 @@ class BuildBracketCommand {
    * @param {string} configPath - Path to configuration file
    * @returns {Promise<Object>} Result information
    */
-  async execute(configPath = "./src/data/playerlist.json") {
+  async execute(configPath = "./bracket-data.json") {
     try {
       console.log("🏆 Starting bracket generation...");
 

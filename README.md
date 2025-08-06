@@ -11,7 +11,7 @@ npm install
 
 1. Set up Google Sheets API credentials (see Google Sheets API documentation)
 2. Place your credentials in `oauth-credentials.json`
-3. Configure your tournament in `src/data/playerlist.json` (this file contains both player list and bracket configuration, including color schemes)
+3. Configure your tournament in `bracket-data.json` (this file contains both player list and bracket configuration, including color schemes)
 
 ## Usage
 
@@ -33,7 +33,7 @@ const { BuildBracketCommand } = buildBracketCommandDefault;
 
 async function generateBracket(auth) {
   const command = new BuildBracketCommand(auth);
-  const result = await command.execute('./src/data/playerlist.json');
+  const result = await command.execute('./bracket-data.json');
   
   if (result.success) {
     console.log('Bracket created:', result.spreadsheet.url);
@@ -49,7 +49,7 @@ async function generateBracket(auth) {
 ```javascript
 import { BracketConfig } from './src/config/bracket-config.js';
 
-const config = BracketConfig.fromFile('./src/data/playerlist.json');
+const config = BracketConfig.fromFile('./bracket-data.json');
 const errors = config.validate();
 
 if (errors.length === 0) {
@@ -62,19 +62,19 @@ if (errors.length === 0) {
 
 ## Color Scheme Configuration
 
-The bracket generator supports flexible color customization through the `colorScheme` property in your bracket configuration file (`src/data/playerlist.json`).
+The bracket generator supports flexible color customization through the `colorScheme` property in your bracket configuration file (`bracket-data.json`).
 
-**Note**: The color scheme is configured in the same file where you define your player list (`src/data/playerlist.json`).
+**Note**: The color scheme is configured in the same file where you define your player list (`bracket-data.json`).
 
 ### Default Behavior
 
-If no `colorScheme` is specified in `src/data/playerlist.json`, the system uses built-in presets based on the bracket type:
+If no `colorScheme` is specified in `bracket-data.json`, the system uses built-in presets based on the bracket type:
 - **Gold bracket**: Uses gold color scheme (warm gold/yellow tones)
 - **Silver bracket**: Uses silver color scheme (cool gray/silver tones)
 
 ### Custom Colors
 
-You can specify any hex color for custom bracket styling by adding a `colorScheme` property to each bracket section in `src/data/playerlist.json`:
+You can specify any hex color for custom bracket styling by adding a `colorScheme` property to each bracket section in `bracket-data.json`:
 
 ```json
 {
@@ -112,7 +112,7 @@ You can specify any hex color for custom bracket styling by adding a `colorSchem
 
 ### Example Configuration
 
-Here's how your `src/data/playerlist.json` file should look with custom colors:
+Here's how your `bracket-data.json` file should look with custom colors:
 
 ```json
 {
@@ -138,7 +138,7 @@ In this example:
 - Championship bracket uses custom orange color (`#FF6B35`)
 - Consolation bracket uses default silver preset (no `colorScheme` specified)
 
-**To customize colors**: Edit your `src/data/playerlist.json` file and add the `colorScheme` property to any bracket section (gold, silver, etc.) where you want custom colors.
+**To customize colors**: Edit your `bracket-data.json` file and add the `colorScheme` property to any bracket section (gold, silver, etc.) where you want custom colors.
 
 ### More Examples
 

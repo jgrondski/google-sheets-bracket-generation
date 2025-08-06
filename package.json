@@ -2,12 +2,12 @@
   "name": "google-sheets-bracket-generation",
   "version": "1.0.0",
   "description": "A simple tool that can generate brackets and push that bracket to a Google Sheet (initially with CTWC-styling)",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "example": "node examples/new-architecture-example.js",
-    "validate-config": "node -e \"import('./src/config/bracket-config.js').then(({BracketConfig}) => { const config = BracketConfig.fromFile('./src/data/playerlist.json'); console.log('Config Summary:', config.getSummary()); const errors = config.validate(); console.log('Validation:', errors.length === 0 ? 'PASSED' : 'ERRORS: ' + errors.join(', ')); });\"",
-    "start": "node index.js"
+    "validate-config": "node -e \"import('./src/config/bracket-config.js').then(({BracketConfig}) => { const config = BracketConfig.fromFile('./bracket-data.json'); console.log('Config Summary:', config.getSummary()); const errors = config.validate(); console.log('Validation:', errors.length === 0 ? 'PASSED' : 'ERRORS: ' + errors.join(', ')); });\"",
+    "start": "node app.js"
   },
   "repository": {
     "type": "git",

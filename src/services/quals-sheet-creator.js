@@ -1,6 +1,7 @@
 import { hexToRgb, resolveColorScheme, FIXED_COLORS } from '../utils/color-utils.js';
 import { GoogleSheetsService } from './google-sheets-service.js';
 import { FONTS } from '../styles/styles.js';
+import { Player } from '../models/player.js';
 
 class QualsSheetCreator {
   constructor(auth) {
@@ -12,21 +13,19 @@ class QualsSheetCreator {
     const sheetName = "Qualifiers";
     const sheetId = await this.googleSheetsService.addSheet(spreadsheetId, sheetName);
 
-    // Get all bracket types and combine their players
-    const bracketTypes = config.getAvailableBracketTypes();
+    // Get all bracket types and combine their players (using domain objects)
     const allPlayers = [];
     
-    for (const bracketType of bracketTypes) {
-      const bracket = tournament.getBracket(bracketType);
-      if (bracket) {
-        const players = bracket.getPlayers();
-        // Add bracket type info to each player for color determination
-        const playersWithBracket = players.map(player => ({
-          ...player,
-          bracketType: bracketType
-        }));
-        allPlayers.push(...playersWithBracket);
-      }
+    for (const bracketType of config.getAvailableBracketTypes()) {
+      // Get players as domain objects with proper seeding
+      const players = config.getPlayersByType(bracketType, true)
+        .map((player, index) => {
+          // Update the seed to be continuous across all brackets
+          player.seed = allPlayers.length + index + 1;
+          return player;
+        });
+      
+      allPlayers.push(...players);
     }
 
     const requests = this.buildSheetRequests(sheetId, allPlayers, config);
@@ -51,15 +50,12 @@ class QualsSheetCreator {
         },
       },
       {
-        autoResizeDimensions: {
-          dimensions: {
-            sheetId,
-            dimension: 'COLUMNS',
-            startIndex: 1,
-            endIndex: 2,
-          },
+        updateDimensionProperties: {
+          range: { sheetId, dimension: 'COLUMNS', startIndex: 1, endIndex: 2 },
+          properties: { pixelSize: 60 }, // Column B: 60px
+          fields: 'pixelSize',
         },
-      }, // Column B: Auto-size to fit text
+      },
       {
         updateDimensionProperties: {
           range: { sheetId, dimension: 'COLUMNS', startIndex: 2, endIndex: 3 },
@@ -193,10 +189,10 @@ class QualsSheetCreator {
       },
     ];
 
-    // Player data (now with combined brackets and continuous seeding)
+    // Player data (now using Player domain objects)
     const playerRows = allPlayers.map((player, index) => {
-      // Get the bracket-specific color
-      const colorScheme = config.getColorSchemeByCategory(player.bracketType);
+      // Get the bracket-specific color using the Player model
+      const colorScheme = player.getColorScheme(config);
       const primaryColor = resolveColorScheme(colorScheme);
       const seedBackgroundColor = hexToRgb(primaryColor);
       
@@ -208,7 +204,7 @@ class QualsSheetCreator {
             },
           },
           { // Column B - Seed (continuous numbering)
-            userEnteredValue: { numberValue: index + 1 },
+            userEnteredValue: { numberValue: player.seed },
             userEnteredFormat: {
               backgroundColor: seedBackgroundColor, // Individual seeds use bracket color
               textFormat: { ...FONTS.seed, fontSize: 15, foregroundColor: blackTextColor },
@@ -217,7 +213,7 @@ class QualsSheetCreator {
             },
           },
           { // Column C - Player Name  
-            userEnteredValue: { stringValue: player.name.toUpperCase() },
+            userEnteredValue: { stringValue: player.getDisplayName() },
             userEnteredFormat: {
               backgroundColor: grayBackgroundColor, // Explicitly set gray background for player names
               textFormat: { ...FONTS.name, fontSize: 18, foregroundColor: whiteTextColor }, // 18pt for player names
