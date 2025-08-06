@@ -1,155 +1,395 @@
-# google-sheets-bracket-generation
-A simple tool that can generate brackets and push that bracket to a Google Sheet (initially with CTWC-styling)
+# Tournament Bracket Generator for Google Sheets
 
-## Installation
+Automatically generate tournament brackets in Google Sheets with player seeding, multiple bracket support, and custom styling.
 
-```bash
-npm install
-```
+## Quick Start Guide
 
-## Setup
+### Prerequisites
 
-1. Set up Google Sheets API credentials (see Google Sheets API documentation)
-2. Place your credentials in `oauth-credentials.json`
-3. Configure your tournament in `bracket-data.json` (this file contains both player list and bracket configuration, including color schemes)
+- **[Node.js](https://nodejs.org/)** (version 16+) - [Full setup details](#prerequisites)
+- **Google account** with Drive/Sheets access
+- **Text editor** for editing JSON files
 
-## Usage
+### Setup (5 minutes)
 
-### Basic Usage (ES6 Modules)
+1. **Clone and install**
 
-```javascript
-import bracketBuilder from './src/bracket-builder.js';
-const { buildBracket } = bracketBuilder;
+   ```bash
+   git clone https://github.com/jgrondski/google-sheets-bracket-generation.git
+   cd google-sheets-bracket-generation
+   npm install
+   ```
 
-// Generate bracket with Google OAuth2 client
-await buildBracket(auth);
-```
+2. **Get Google API credentials** - [Detailed Google setup guide](#google-api-setup)
 
-### Advanced Usage with New Architecture
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Enable Google Sheets API + Google Drive API
+   - Create OAuth credentials → Download → Rename to `oauth-credentials.json`
 
-```javascript
-import buildBracketCommandDefault from './src/commands/build-bracket-command.js';
-const { BuildBracketCommand } = buildBracketCommandDefault;
+3. **Configure your tournament** - [Configuration examples](#tournament-configuration)
 
-async function generateBracket(auth) {
-  const command = new BuildBracketCommand(auth);
-  const result = await command.execute('./bracket-data.json');
-  
-  if (result.success) {
-    console.log('Bracket created:', result.spreadsheet.url);
-    console.log('Tournament summary:', result.tournament);
-  } else {
-    console.error('Error:', result.error);
-  }
-}
-```
+   **For a few players:** Edit `bracket-data.json` directly
 
-### Configuration Validation
+   ```json
+   // Edit bracket-data.json
+   {
+     "options": {
+       "sheetName": "My Tournament",
+       "gold": {
+         "bracketSize": "8",
+         "bracketType": "standard",
+         "bracketName": "Main Bracket"
+       }
+     },
+     "players": [
+       { "name": "Player 1" },
+       { "name": "Player 2" },
+       { "name": "Player 3" },
+       { "name": "Player 4" },
+       { "name": "Player 5" },
+       { "name": "Player 6" },
+       { "name": "Player 7" },
+       { "name": "Player 8" }
+     ]
+   }
+   ```
 
-```javascript
-import { BracketConfig } from './src/config/bracket-config.js';
+   **For many players (64+):** Use the player converter utility
 
-const config = BracketConfig.fromFile('./bracket-data.json');
-const errors = config.validate();
+   ```bash
+   node convert-players.js
+   # Paste your list of names (one per line), press Enter twice when done
+   ```
 
-if (errors.length === 0) {
-  console.log('Configuration is valid');
-  console.log('Config summary:', config.getSummary());
-} else {
-  console.error('Configuration errors:', errors);
-}
-```
+4. **Run it!**
+   ```bash
+   npm start
+   ```
+   Follow the OAuth prompts (first time only) - [Authentication help](#step-3-first-run-authentication)
 
-## Color Scheme Configuration
+**That's it!** Your tournament bracket will be created in Google Sheets.
 
-The bracket generator supports flexible color customization through the `colorScheme` property in your bracket configuration file (`bracket-data.json`).
+**Need help?** Check [Troubleshooting](#troubleshooting) • [Advanced Configuration](#multiple-brackets-configuration) • [Color Customization](#color-customization)
 
-**Note**: The color scheme is configured in the same file where you define your player list (`bracket-data.json`).
+---
 
-### Default Behavior
+## Detailed Documentation
 
-If no `colorScheme` is specified in `bracket-data.json`, the system uses built-in presets based on the bracket type:
-- **Gold bracket**: Uses gold color scheme (warm gold/yellow tones)
-- **Silver bracket**: Uses silver color scheme (cool gray/silver tones)
+## Prerequisites
 
-### Custom Colors
+Before getting started, make sure you have:
 
-You can specify any hex color for custom bracket styling by adding a `colorScheme` property to each bracket section in `bracket-data.json`:
+### Required Software
+
+- **[Node.js](https://nodejs.org/)** (version 16 or higher)
+  - Download from [nodejs.org](https://nodejs.org/)
+  - Verify installation (works on all platforms):
+    ```bash
+    node --version
+    npm --version
+    ```
+- **Git** (for cloning the repository)
+  - Download from [git-scm.com](https://git-scm.com/)
+  - Or use GitHub Desktop
+
+### Recommended Tools
+
+- **Text Editor** (choose one):
+  - [Visual Studio Code](https://code.visualstudio.com/) (recommended - great JSON editing)
+  - [Sublime Text](https://www.sublimetext.com/)
+  - Any text editor that handles JSON well
+- **Google Account** with access to Google Drive and Sheets
+
+### System Requirements
+
+- **Internet connection** (required for Google Sheets API)
+- **Terminal/Command Prompt** access
+  - **Mac/Linux**: Terminal app
+  - **Windows**: Command Prompt, PowerShell, or Git Bash
+- **Web browser** (for Google OAuth authentication)
+
+## Quick Start
+
+1. **Clone this repository**
+
+   Using Git (Mac/Linux/Windows):
+
+   ```bash
+   git clone https://github.com/jgrondski/google-sheets-bracket-generation.git
+   cd google-sheets-bracket-generation
+   ```
+
+   Using Windows Command Prompt:
+
+   ```cmd
+   git clone https://github.com/jgrondski/google-sheets-bracket-generation.git
+   cd google-sheets-bracket-generation
+   ```
+
+2. **Install dependencies**
+
+   All platforms:
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up Google API credentials** (see setup guide below)
+
+4. **Configure your tournament** in `bracket-data.json`
+
+5. **Run the generator**
+
+   All platforms:
+
+   ```bash
+   npm start
+   ```
+
+## Google API Setup
+
+### Step 1: Enable Google APIs
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing project
+3. Enable these APIs:
+   - **Google Sheets API**
+   - **Google Drive API**
+
+### Step 2: Create OAuth Credentials
+
+1. Go to **APIs & Services > Credentials**
+2. Click **+ CREATE CREDENTIALS > OAuth client ID**
+3. Choose **Desktop application**
+4. Download the JSON file
+5. **Rename it to `oauth-credentials.json`** and place it in your project root
+
+Your `oauth-credentials.json` should look like this:
 
 ```json
 {
-  "options": {
-    "gold": {
-      "bracketSize": "16",
-      "bracketType": "standard",
-      "bracketName": "Gold Bracket",
-      "colorScheme": "#1E90FF"
-    },
-    "silver": {
-      "bracketSize": "23",
-      "bracketType": "standard", 
-      "bracketName": "Silver Bracket",
-      "colorScheme": "#FF5733"
-    }
+  "installed": {
+    "client_id": "your-client-id.googleusercontent.com",
+    "client_secret": "your-client-secret",
+    "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob", "http://localhost"]
   }
 }
 ```
 
-### Color Scheme Options
+### Step 3: First Run Authentication
 
-| Option | Description | Example |
-|--------|-------------|---------|
-| `"gold"` | Built-in gold preset (default for gold brackets) | Warm gold/yellow styling |
-| `"silver"` | Built-in silver preset (default for silver brackets) | Cool gray/silver styling |
-| `"#RRGGBB"` | Custom hex color | `"#FF5733"` (orange), `"#1E90FF"` (blue) |
+The first time you run `npm start`, you'll be prompted to:
 
-### Color Features
+1. Visit a Google authorization URL
+2. Grant permissions to access Google Sheets and Drive
+3. **Important**: After granting permissions, you'll be redirected to a page that may not load properly or show an error
+4. **Don't worry!** The authorization code you need is in the URL of that "broken" page
+5. Copy the authorization code from the URL (it will be after `code=` in the address bar)
+6. Paste it into your terminal where prompted
 
-- **Dynamic Generation**: Colors are automatically calculated to ensure proper contrast and readability
-- **Smart Borders**: Border colors are dynamically generated based on your chosen color
-- **Backwards Compatible**: Existing configurations without `colorScheme` continue to work with default presets
-- **No Code Changes**: Add new colors without modifying any source code
+**Example**: If the redirect URL looks like:
 
-### Example Configuration
+```
+https://localhost/?code=4/0AX4XfWjabc123def456ghi789&scope=https://www.googleapis.com/auth/spreadsheets
+```
 
-Here's how your `bracket-data.json` file should look with custom colors:
+You would copy: `4/0AX4XfWjab123def456ghi789`
+
+This creates a `token.json` file that stores your authentication - **keep this file secure and don't share it**.
+
+## Tournament Configuration
+
+Edit `bracket-data.json` to configure your tournament:
+
+### For Large Player Lists (64+ players)
+
+Use the included converter utility to avoid manual JSON formatting:
+
+```bash
+node convert-players.js
+```
+
+Then paste your player list (one name per line) and press Enter twice:
+
+```
+John Smith
+Jane Doe
+Bob Wilson
+Alice Johnson
+[... paste all your players ...]
+
+[press Enter twice when done]
+```
+
+This creates `bracket-data.json` automatically with all your players in the correct format.
+
+### Example Files
+
+- `bracket-data-example.json` - Simple 8-player single bracket
+- `bracket-data-multi-example.json` - Multi-bracket with gold/silver + custom colors
+
+### For Small Player Lists (Manual Editing)
+
+### Minimal Configuration (Single Bracket)
 
 ```json
 {
   "options": {
     "sheetName": "My Tournament 2025",
     "gold": {
-      "bracketSize": "16",
+      "bracketSize": "8",
       "bracketType": "standard",
-      "bracketName": "Championship Bracket",
-      "colorScheme": "#FF6B35"
-    },
-    "silver": {
-      "bracketSize": "32", 
-      "bracketType": "standard",
-      "bracketName": "Consolation Bracket"
+      "bracketName": "Main Bracket"
     }
   },
-  "players": [...]
+  "players": [
+    { "name": "Player 1" },
+    { "name": "Player 2" },
+    { "name": "Player 3" },
+    { "name": "Player 4" },
+    { "name": "Player 5" },
+    { "name": "Player 6" },
+    { "name": "Player 7" },
+    { "name": "Player 8" }
+  ]
 }
 ```
 
-In this example:
-- Championship bracket uses custom orange color (`#FF6B35`)
-- Consolation bracket uses default silver preset (no `colorScheme` specified)
+### Multiple Brackets Configuration
 
-**To customize colors**: Edit your `bracket-data.json` file and add the `colorScheme` property to any bracket section (gold, silver, etc.) where you want custom colors.
+```json
+{
+  "options": {
+    "sheetName": "Championship Tournament 2025",
+    "gold": {
+      "bracketSize": "16",
+      "bracketType": "standard",
+      "bracketName": "Championship Bracket",
+      "colorScheme": "#FFD700"
+    },
+    "silver": {
+      "bracketSize": "16",
+      "bracketType": "standard",
+      "bracketName": "Consolation Bracket",
+      "colorScheme": "#C0C0C0"
+    }
+  },
+  "players": [
+    { "name": "Top Player" },
+    { "name": "Second Player" }
+    // ... up to 32 players total
+    // First 16 go to gold bracket
+    // Next 16 go to silver bracket
+  ]
+}
+```
 
-### More Examples
+### Configuration Options
 
-See `examples/custom-colors-example.json` for a complete configuration showing custom color usage.
+| Option        | Description                       | Example                           |
+| ------------- | --------------------------------- | --------------------------------- |
+| `sheetName`   | Name of the Google Sheet          | `"My Tournament 2025"`            |
+| `bracketSize` | Number of players in this bracket | `"16"`                            |
+| `bracketType` | Tournament format                 | `"standard"`                      |
+| `bracketName` | Display name for this bracket     | `"Championship"`                  |
+| `colorScheme` | Color theme (optional)            | `"#FF5733"`, `"gold"`, `"silver"` |
 
-## Scripts
+**Player Allocation:**
 
-- `npm start` - Run the bracket generation
-- `npm run example` - Run the architecture example
-- `npm run validate-config` - Validate the configuration file
+- **Gold bracket** gets the first N players (where N = gold bracketSize)
+- **Silver bracket** gets the next N players after gold
+- Players are allocated in the order they appear in the `players` array
 
-## Architecture
+## Running the Application
 
-This project uses a modular ES6 architecture with clear separation of concerns. See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed information about the project structure and design patterns.
+### Generate Tournament
+
+All platforms:
+
+```bash
+npm start
+```
+
+### Validate Configuration (without generating)
+
+All platforms:
+
+```bash
+npm run validate-config
+```
+
+### Alternative Commands
+
+Direct Node execution (Mac/Linux/Windows):
+
+```bash
+node app.js
+```
+
+Direct Node execution (Windows Command Prompt):
+
+```cmd
+node app.js
+```
+
+### Available Commands
+
+- `npm start` - Generate brackets and create Google Sheet
+- `npm run validate-config` - Check configuration for errors
+- `node app.js` - Alternative way to run the generator
+- `node convert-players.js` - Convert a list of player names to JSON format
+
+## Color Customization
+
+### Built-in Presets
+
+- `"gold"` - Warm gold/yellow styling (default for gold brackets)
+- `"silver"` - Cool gray/silver styling (default for silver brackets)
+
+### Custom Colors
+
+Use any hex color code:
+
+```json
+{
+  "gold": {
+    "colorScheme": "#FF6B35"
+  }
+}
+```
+
+### Color Features
+
+- **Smart contrast** - Text colors automatically adjust for readability
+- **Dynamic borders** - Border colors calculated from your chosen color
+- **No defaults overridden** - Only brackets with `colorScheme` use custom colors
+
+## Troubleshooting
+
+### "Error: ENOENT: no such file or directory, open 'oauth-credentials.json'"
+
+- Make sure you've downloaded your OAuth credentials from Google Cloud Console
+- Rename the file to exactly `oauth-credentials.json`
+- Place it in your project root directory
+
+### "Error: invalid_grant" or authentication issues
+
+- Delete `token.json` and run `npm start` again to re-authenticate
+- Make sure your Google Cloud project has the correct APIs enabled
+
+### "Configuration errors: No players configured"
+
+- Check that your `bracket-data.json` has a `players` array with at least 2 players
+- Make sure each player has a `name` property
+
+### Brackets appear empty or wrong
+
+- Verify `bracketSize` matches or is less than your player count
+- For multiple brackets, ensure total bracket sizes don't exceed player count
+
+## Files Overview
+
+- `bracket-data.json` - Your tournament configuration and player list
+- `oauth-credentials.json` - Google API credentials (you create this)
+- `token.json` - Authentication token (created automatically)
+- `app.js` - Main application entry point

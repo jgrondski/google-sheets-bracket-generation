@@ -1,0 +1,22 @@
+{
+  "options": {
+    "sheetName": "My First Tournament 2025",
+    "gold": {
+      "bracketSize": "8",
+      "bracketType": "standard",
+      "bracketName": "Main Bracket"
+    }
+  },
+  "players": [
+    { "name": "Alice Johnson" },
+    { "name": "Bob Smith" },
+    { "name": "Charlie Brown" },
+    { "name": "Diana Prince" },
+    { "name": "Ethan Hunt" },
+    { "name": "Fiona Apple" },
+    { "name": "George Lucas" },
+    { "name": "Helen Troy" },
+    { "name": "Ian Malcolm" },
+    { "name": "Jane Doe" }
+  ]
+}
