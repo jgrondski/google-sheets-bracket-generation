@@ -60,6 +60,7 @@ rl.on("close", () => {
         bracketSize: playerNames.length.toString(),
         bracketType: "standard",
         bracketName: "Main Bracket",
+        bestOf: "5",
       },
     },
     players,

@@ -1,7 +1,7 @@
-import { DataSource } from '../interfaces/data-source.js';
-import { Player } from '../../models/player.js';
-import { Match } from '../../models/match.js';
-import { GoogleSheetsService } from '../../services/google-sheets-service.js';
+import { DataSource } from "../interfaces/data-source.js";
+import { Player } from "../../models/player.js";
+import { Match } from "../../models/match.js";
+import { GoogleSheetsService } from "../../services/google-sheets-service.js";
 
 /**
  * Google Sheets Data Source Implementation
@@ -21,13 +21,20 @@ class SheetsDataSource extends DataSource {
    * @returns {Promise<Player[]>} Array of Player domain objects
    */
   async getPlayers(options = {}) {
-    const { bracketType = null, sheetName = 'Qualifiers' } = options;
-    
+    const {
+      bracketType = null,
+      sheetName = "Qualifiers",
+      goldBracketSize = 16,
+    } = options;
+
     try {
       // Read data from the Qualifiers sheet
       const range = `${sheetName}!A:D`; // Columns A-D contain qualifier data
-      const response = await this.sheetsService.getSheetData(this.spreadsheetId, range);
-      
+      const response = await this.sheetsService.getSheetData(
+        this.spreadsheetId,
+        range
+      );
+
       if (!response.data.values) {
         return [];
       }
@@ -36,16 +43,19 @@ class SheetsDataSource extends DataSource {
       const players = [];
 
       // Skip header rows and process player data
-      for (let i = 2; i < rows.length; i++) { // Start from row 3 (index 2)
+      for (let i = 2; i < rows.length; i++) {
+        // Start from row 3 (index 2)
         const row = rows[i];
-        if (row.length >= 3 && row[1] && row[2]) { // Seed and Name columns
+        if (row.length >= 3 && row[1] && row[2]) {
+          // Seed and Name columns
           const seed = parseInt(row[1], 10);
           const name = row[2].toString().trim();
-          
+
           if (seed && name) {
             // Determine bracket type based on seed or other logic
-            const playerBracketType = bracketType || (seed <= 16 ? 'gold' : 'silver');
-            
+            const playerBracketType =
+              bracketType || (seed <= goldBracketSize ? "gold" : "silver");
+
             const player = new Player(name, seed, playerBracketType);
             players.push(player);
           }
@@ -54,12 +64,12 @@ class SheetsDataSource extends DataSource {
 
       // Filter by bracket type if specified
       if (bracketType) {
-        return players.filter(p => p.bracketType === bracketType);
+        return players.filter((p) => p.bracketType === bracketType);
       }
 
       return players;
     } catch (error) {
-      console.error('Error loading players from Google Sheets:', error.message);
+      console.error("Error loading players from Google Sheets:", error.message);
       return [];
     }
   }
@@ -70,16 +80,18 @@ class SheetsDataSource extends DataSource {
    * @returns {Promise<Match[]>} Array of Match domain objects
    */
   async getMatches(options = {}) {
-    const { bracketType = 'gold', sheetName = null } = options;
-    const targetSheetName = sheetName || `${bracketType.charAt(0).toUpperCase() + bracketType.slice(1)} Bracket`;
-    
+    const { bracketType = "gold", sheetName = null } = options;
+    const targetSheetName =
+      sheetName ||
+      `${bracketType.charAt(0).toUpperCase() + bracketType.slice(1)} Bracket`;
+
     try {
       // This is a placeholder for future implementation
       // Will read match results from bracket sheets and convert to Match domain objects
       // For now, return empty array
       return [];
     } catch (error) {
-      console.error('Error loading matches from Google Sheets:', error.message);
+      console.error("Error loading matches from Google Sheets:", error.message);
       return [];
     }
   }
@@ -99,14 +111,17 @@ class SheetsDataSource extends DataSource {
         sheetName: spreadsheet.data.properties.title,
         spreadsheetId: this.spreadsheetId,
         lastModified: spreadsheet.data.properties.timeZone,
-        sheets: spreadsheet.data.sheets.map(sheet => ({
+        sheets: spreadsheet.data.sheets.map((sheet) => ({
           title: sheet.properties.title,
           sheetId: sheet.properties.sheetId,
-          sheetType: sheet.properties.sheetType
-        }))
+          sheetType: sheet.properties.sheetType,
+        })),
       };
     } catch (error) {
-      console.error('Error loading configuration from Google Sheets:', error.message);
+      console.error(
+        "Error loading configuration from Google Sheets:",
+        error.message
+      );
       return {};
     }
   }
@@ -118,21 +133,21 @@ class SheetsDataSource extends DataSource {
    * @returns {Promise<void>}
    */
   async savePlayers(players, options = {}) {
-    const { sheetName = 'Qualifiers' } = options;
-    
+    const { sheetName = "Qualifiers" } = options;
+
     try {
       // This would implement updating the Qualifiers sheet with new player data
       // For now, throw an error as this is complex and requires careful implementation
-      throw new Error('SheetsDataSource.savePlayers() not yet implemented');
+      throw new Error("SheetsDataSource.savePlayers() not yet implemented");
     } catch (error) {
-      console.error('Error saving players to Google Sheets:', error.message);
+      console.error("Error saving players to Google Sheets:", error.message);
       throw error;
     }
   }
 
   /**
    * Save matches to Google Sheets (update bracket sheets with results)
-   * @param {Match[]} matches - Array of Match domain objects  
+   * @param {Match[]} matches - Array of Match domain objects
    * @param {Object} options - Save options
    * @returns {Promise<void>}
    */
@@ -140,9 +155,9 @@ class SheetsDataSource extends DataSource {
     try {
       // This would implement updating bracket sheets with match results
       // For now, throw an error as this is complex and requires careful implementation
-      throw new Error('SheetsDataSource.saveMatches() not yet implemented');
+      throw new Error("SheetsDataSource.saveMatches() not yet implemented");
     } catch (error) {
-      console.error('Error saving matches to Google Sheets:', error.message);
+      console.error("Error saving matches to Google Sheets:", error.message);
       throw error;
     }
   }
@@ -167,7 +182,7 @@ class SheetsDataSource extends DataSource {
    * @returns {string} Data source type
    */
   getType() {
-    return 'sheets';
+    return "sheets";
   }
 }
 

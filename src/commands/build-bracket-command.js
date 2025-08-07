@@ -8,6 +8,7 @@ const { BracketLayout } = _default;
 import { SpreadsheetCreator } from "../services/spreadsheet-creator.js";
 import { BracketRenderer } from "../services/bracket-renderer.js";
 import { QualsSheetCreator } from "../services/quals-sheet-creator.js";
+import { MatchSheetCreator } from "../services/match-sheet-creator.js";
 import __default from "./command-validator.js";
 const { CommandValidator } = __default;
 
@@ -87,7 +88,36 @@ class BuildBracketCommand {
         spreadsheet = await creator.createTournamentSpreadsheet(config);
       }
 
-      // 5. Handle rendering based on tournament type
+      // 5. Create combined Quals sheet
+      const qualsSheetCreator = new QualsSheetCreator(this.auth);
+      await qualsSheetCreator.create(
+        spreadsheet.spreadsheetId,
+        tournament,
+        config
+      );
+      console.log(`✅ Combined Qualifiers sheet created`);
+
+      // 6. Create match tracking sheets
+      const matchSheetCreator = new MatchSheetCreator(this.auth);
+      let matchSheets;
+
+      if (isMultiBracket) {
+        matchSheets = await matchSheetCreator.createMultiBracketMatchSheets(
+          spreadsheet.spreadsheetId,
+          tournament,
+          config
+        );
+        console.log(`✅ Match tracking sheets created for all brackets`);
+      } else {
+        matchSheets = await matchSheetCreator.createSingleBracketMatchSheet(
+          spreadsheet.spreadsheetId,
+          tournament,
+          config
+        );
+        console.log(`✅ Match tracking sheet created`);
+      }
+
+      // 7. Handle rendering based on tournament type
       if (isMultiBracket) {
         await this.renderMultiSheetTournament(spreadsheet, tournament, config);
       } else {
@@ -98,13 +128,13 @@ class BuildBracketCommand {
         // Render bracket to spreadsheet
         const renderer = new BracketRenderer(this.auth);
         const colorScheme = config.getColorSchemeByCategory("gold");
-        await renderer.renderBracketOnSheet(spreadsheet.spreadsheetId, layout, 0, colorScheme);
+        await renderer.renderBracketOnSheet(
+          spreadsheet.spreadsheetId,
+          layout,
+          0,
+          colorScheme
+        );
       }
-
-      // 6. Create combined Quals sheet
-      const qualsSheetCreator = new QualsSheetCreator(this.auth);
-      await qualsSheetCreator.create(spreadsheet.spreadsheetId, tournament, config);
-      console.log(`✅ Combined Qualifiers sheet created`);
 
       console.log("✅ Bracket generation complete!");
 
@@ -130,7 +160,11 @@ class BuildBracketCommand {
    * @param {MultiBracketTournament} multiBracketTournament - The multi-bracket tournament
    * @param {BracketConfig} config - The bracket configuration
    */
-  async renderMultiSheetTournament(spreadsheet, multiBracketTournament, config) {
+  async renderMultiSheetTournament(
+    spreadsheet,
+    multiBracketTournament,
+    config
+  ) {
     const renderer = new BracketRenderer(this.auth);
     const bracketTypes = multiBracketTournament.getBracketTypes();
 
@@ -187,11 +221,12 @@ class BuildBracketCommand {
 /**
  * Legacy function wrapper for backward compatibility
  * @param {Object} auth - Google OAuth2 client
+ * @param {string} configPath - Path to configuration file
  * @returns {Promise<void>}
  */
-async function buildBracket(auth) {
+async function buildBracket(auth, configPath) {
   const command = new BuildBracketCommand(auth);
-  const result = await command.execute();
+  const result = await command.execute(configPath);
 
   if (!result.success) {
     throw new Error(result.error);

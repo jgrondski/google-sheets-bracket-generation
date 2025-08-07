@@ -42,6 +42,34 @@ class BracketConfig {
   }
 
   /**
+   * Get the bestOf configuration (how many games to win)
+   * @param {string} bracketType - 'gold' or 'silver' (optional, defaults to current bracket)
+   * @returns {number} Best of X games (default 5)
+   */
+  getBestOf(bracketType = null) {
+    // If bracketType is specified, get bracket-specific bestOf
+    if (bracketType) {
+      const bracketConfig = this.getBracketConfigByType(bracketType);
+      const bestOf = bracketConfig?.bestOf || this.options?.bestOf || "5";
+      return parseInt(bestOf);
+    }
+
+    // Otherwise use current bracket or global fallback
+    const bracketConfig = this.getBracketConfig();
+    const bestOf = bracketConfig?.bestOf || this.options?.bestOf || "5";
+    return parseInt(bestOf);
+  }
+
+  /**
+   * Get maximum score for winning a match
+   * @param {string} bracketType - 'gold' or 'silver' (optional, defaults to current bracket)
+   * @returns {number} Score needed to win (bestOf/2 rounded up)
+   */
+  getMaxScore(bracketType = null) {
+    return Math.ceil(this.getBestOf(bracketType) / 2);
+  }
+
+  /**
    * Get the bracket configuration
    * @returns {Object} Bracket configuration
    */
@@ -163,13 +191,13 @@ class BracketConfig {
   getPlayers(asDomainObjects = false) {
     const bracketSize = this.getBracketSize();
     const rawPlayers = this.players.slice(0, bracketSize);
-    
+
     if (asDomainObjects) {
-      return rawPlayers.map((player, index) => 
-        Player.fromJson(player, index + 1, 'gold')
+      return rawPlayers.map((player, index) =>
+        Player.fromJson(player, index + 1, "gold")
       );
     }
-    
+
     return rawPlayers.map((player, index) => ({
       seed: index + 1,
       name: player.name,
@@ -200,8 +228,8 @@ class BracketConfig {
       );
 
       if (asDomainObjects) {
-        return silverPlayers.map((player, index) => 
-          Player.fromJson(player, index + 1, 'silver')
+        return silverPlayers.map((player, index) =>
+          Player.fromJson(player, index + 1, "silver")
         );
       }
 
@@ -344,7 +372,9 @@ class BracketConfig {
   createRepository() {
     // For now, create a repository that wraps this BracketConfig's data
     // In the future, this could be enhanced to create different repository types
-    return TournamentRepository.fromFile(this.configPath || './bracket-data.json');
+    return TournamentRepository.fromFile(
+      this.configPath || "./bracket-data.json"
+    );
   }
 
   /**
@@ -355,7 +385,7 @@ class BracketConfig {
     return {
       sheetName: this.getSheetName(),
       brackets: this.options,
-      players: this.getAllPlayers()
+      players: this.getAllPlayers(),
     };
   }
 }

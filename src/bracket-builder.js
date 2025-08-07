@@ -8,10 +8,11 @@ const { buildBracket: newBuildBracket } = buildBracketCommand;
 /**
  * Legacy buildBracket function - redirects to new modular implementation
  * @param {Object} auth - Google OAuth2 client
+ * @param {string} configPath - Path to configuration file
  * @returns {Promise<void>}
  */
-async function buildBracket(auth) {
-  return await newBuildBracket(auth);
+async function buildBracket(auth, configPath) {
+  return await newBuildBracket(auth, configPath);
 }
 
 export default { buildBracket };

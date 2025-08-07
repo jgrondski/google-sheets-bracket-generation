@@ -15,6 +15,9 @@ const { buildBracket } = bracketBuilder;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Get config file from command line argument or use default
+const configFile = process.argv[2] || "./bracket-data.json";
+
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/drive.file",
@@ -25,7 +28,7 @@ const CREDENTIALS_PATH =
 
 readFile(CREDENTIALS_PATH, (err, content) => {
   if (err) return console.error("❌ Error loading client secret file:", err);
-  authorize(JSON.parse(content), buildBracket);
+  authorize(JSON.parse(content), (auth) => buildBracket(auth, configFile));
 });
 
 async function authorize(credentials, callback) {

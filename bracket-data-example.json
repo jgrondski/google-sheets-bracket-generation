@@ -4,7 +4,8 @@
     "gold": {
       "bracketSize": "8",
       "bracketType": "standard",
-      "bracketName": "Main Bracket"
+      "bracketName": "Main Bracket",
+      "bestOf": "5"
     }
   },
   "players": [
