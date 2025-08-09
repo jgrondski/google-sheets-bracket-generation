@@ -552,14 +552,10 @@ class MatchSheetCreator {
     const lightGrey1 = { red: 0.851, green: 0.851, blue: 0.851 }; // #d9d9d9 (217/255, 217/255, 217/255)
     const black = { red: 0.0, green: 0.0, blue: 0.0 };
 
-    // Calculate the actual data range (matches only, stop at the last actual data row)
-    let maxDataRow = 1; // Start with header row
-    for (const round of matchData.rounds) {
-      const roundMaxRow = 1 + (round.matches.length * 3) - 1; // Last actual data row (header + matches * 3 rows each, minus 1 to exclude extra row)
-      if (roundMaxRow > maxDataRow) {
-        maxDataRow = roundMaxRow;
-      }
-    }
+    // Calculate the actual data range based on Round 1 (which has the most matches)
+    // This determines how far down we need to apply background colors
+    const round1 = matchData.rounds[0];
+    const maxDataRow = 1 + (round1.matches.length * 3); // Header + matches * 3 rows each, includes all match data
 
     // Define column widths (same approach as bracket renderer)
     const columnWidths = [
@@ -808,142 +804,159 @@ class MatchSheetCreator {
   }
 
   /**
-   * Apply background colors with the specific pattern requested
+   * Apply background colors with systematic approach based on data presence
    */
   async applyBackgroundColors(spreadsheetId, sheetId, matchData, config, bracketType, maxDataRow, lightBlue3, lightYellow3, lightGrey1, black) {
-    const requests = [];
     const columnsPerRound = this.getColumnsPerRound(config, bracketType);
     const bestOf = config.getBestOf(bracketType);
-    const white = { red: 1.0, green: 1.0, blue: 1.0 }; // White color for spacer columns
+    const white = { red: 1.0, green: 1.0, blue: 1.0 };
 
-    // First pass: Apply alternating light grey background to data area only
-    for (let round = 0; round < matchData.numRounds; round++) {
-      const startCol = round * columnsPerRound;
-      const endCol = startCol + columnsPerRound;
+    // Calculate data boundaries for each round
+    const roundDataBoundaries = this.calculateRoundDataBoundaries(matchData);
 
+    // Pass 1 (4th to last): Apply colors to rows with data (blue, yellow, grey)
+    await this.applyDataRowBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, bestOf, roundDataBoundaries, lightBlue3, lightYellow3, lightGrey1);
+
+    // Pass 2 (3rd to last): Apply grey to spacer rows
+    await this.applySpacerRowBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, lightGrey1);
+
+    // Pass 3 (2nd to last): Apply white to spacer columns
+    await this.applySpacerColumnBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, white, maxDataRow);
+
+    // Pass 4 (last): Apply black backgrounds to rounds with fewer matches
+    await this.applyBlackBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, black);
+  }
+
+  /**
+   * Calculate data boundaries for each round to determine which rows contain actual data
+   */
+  calculateRoundDataBoundaries(matchData) {
+    const boundaries = [];
+    
+    for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
+      const round = matchData.rounds[roundIndex];
+      const matchCount = round.matches.length;
+      
+      // Calculate the last row with actual data (excludes final spacer row)
+      const lastDataRow = 1 + (matchCount * 3) - 1; // Header + matches * 3 rows, minus final spacer
+      
+      boundaries.push({
+        roundIndex,
+        matchCount,
+        lastDataRow,
+        hasData: matchCount > 0
+      });
+    }
+    
+    return boundaries;
+  }
+
+  /**
+   * Apply background colors to rows that contain data (formulas or text)
+   */
+  async applyDataRowBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, bestOf, boundaries, lightBlue3, lightYellow3, lightGrey1) {
+    const requests = [];
+
+    for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
+      const boundary = boundaries[roundIndex];
+      if (!boundary.hasData) continue;
+
+      const startCol = roundIndex * columnsPerRound;
+      const usernameCol = startCol + 2; // Username column
+      const scoreCol = startCol + 3; // Score column  
+      const gameColsStart = startCol + 4; // Game columns start
+      const gameColsEnd = gameColsStart + bestOf; // Game columns end
+      const lossTCol = startCol + 4 + bestOf; // Loss T column
+
+      // Apply grey background to all data columns first (Match + Seed columns)
       requests.push({
         repeatCell: {
           range: {
             sheetId: sheetId,
-            startRowIndex: 1, // Skip header row
-            endRowIndex: maxDataRow, // Use corrected maxDataRow
-            startColumnIndex: startCol,
-            endColumnIndex: endCol,
+            startRowIndex: 1, // Skip header
+            endRowIndex: boundary.lastDataRow,
+            startColumnIndex: startCol, // Match column
+            endColumnIndex: startCol + 2, // Up to (but not including) Username
           },
           cell: {
-            userEnteredFormat: {
-              backgroundColor: lightGrey1,
-            },
+            userEnteredFormat: { backgroundColor: lightGrey1 },
           },
           fields: "userEnteredFormat.backgroundColor",
         },
       });
-    }
 
-    // Second pass: Apply specific colors for Username and Loss T (Light Blue 3)
-    for (let round = 0; round < matchData.numRounds; round++) {
-      const startCol = round * columnsPerRound;
-      const usernameCol = startCol + 2; // Username column
-      const lossTCol = startCol + 4 + bestOf; // Loss T column is after Score + Game columns
-
-      // Username column
+      // Apply blue background to Username column
       requests.push({
         repeatCell: {
           range: {
             sheetId: sheetId,
-            startRowIndex: 1, // Skip header row
-            endRowIndex: maxDataRow, // Use corrected maxDataRow
+            startRowIndex: 1,
+            endRowIndex: boundary.lastDataRow,
             startColumnIndex: usernameCol,
             endColumnIndex: usernameCol + 1,
           },
           cell: {
-            userEnteredFormat: {
-              backgroundColor: lightBlue3,
-            },
+            userEnteredFormat: { backgroundColor: lightBlue3 },
           },
           fields: "userEnteredFormat.backgroundColor",
         },
       });
 
-      // Loss T column
+      // Apply yellow background to Score column
       requests.push({
         repeatCell: {
           range: {
             sheetId: sheetId,
-            startRowIndex: 1, // Skip header row
-            endRowIndex: maxDataRow, // Use corrected maxDataRow
-            startColumnIndex: lossTCol,
-            endColumnIndex: lossTCol + 1,
-          },
-          cell: {
-            userEnteredFormat: {
-              backgroundColor: lightBlue3,
-            },
-          },
-          fields: "userEnteredFormat.backgroundColor",
-        },
-      });
-    }
-
-    // Third pass: Apply Light Yellow 3 to Score and Game columns
-    for (let round = 0; round < matchData.numRounds; round++) {
-      const startCol = round * columnsPerRound;
-      const scoreCol = startCol + 3; // Score column
-      const gameColsStart = startCol + 4; // Game columns start
-      const gameColsEnd = gameColsStart + bestOf; // Game columns end
-
-      // Score column
-      requests.push({
-        repeatCell: {
-          range: {
-            sheetId: sheetId,
-            startRowIndex: 1, // Skip header row
-            endRowIndex: maxDataRow, // Use corrected maxDataRow
+            startRowIndex: 1,
+            endRowIndex: boundary.lastDataRow,
             startColumnIndex: scoreCol,
             endColumnIndex: scoreCol + 1,
           },
           cell: {
-            userEnteredFormat: {
-              backgroundColor: lightYellow3,
-            },
+            userEnteredFormat: { backgroundColor: lightYellow3 },
           },
           fields: "userEnteredFormat.backgroundColor",
         },
       });
 
-      // Game columns
+      // Apply yellow background to Game columns
       requests.push({
         repeatCell: {
           range: {
             sheetId: sheetId,
-            startRowIndex: 1, // Skip header row
-            endRowIndex: maxDataRow, // Use corrected maxDataRow
+            startRowIndex: 1,
+            endRowIndex: boundary.lastDataRow,
             startColumnIndex: gameColsStart,
             endColumnIndex: gameColsEnd,
           },
           cell: {
-            userEnteredFormat: {
-              backgroundColor: lightYellow3,
-            },
+            userEnteredFormat: { backgroundColor: lightYellow3 },
+          },
+          fields: "userEnteredFormat.backgroundColor",
+        },
+      });
+
+      // Apply blue background to Loss T column
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId: sheetId,
+            startRowIndex: 1,
+            endRowIndex: boundary.lastDataRow,
+            startColumnIndex: lossTCol,
+            endColumnIndex: lossTCol + 1,
+          },
+          cell: {
+            userEnteredFormat: { backgroundColor: lightBlue3 },
           },
           fields: "userEnteredFormat.backgroundColor",
         },
       });
     }
 
-    // Apply all background color requests
     if (requests.length > 0) {
       await this.sheetsService.batchUpdate(spreadsheetId, requests);
     }
-
-    // Fourth pass (3rd to last): Apply light grey 1 background to spacer rows
-    await this.applySpacerRowBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, lightGrey1);
-
-    // Fifth pass (2nd to last): Apply white background to spacer columns
-    await this.applySpacerColumnBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, white, maxDataRow);
-
-    // Final pass (last): Apply black backgrounds below the last match in each round
-    await this.applyBlackBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, black);
   }
 
   /**
@@ -1029,35 +1042,44 @@ class MatchSheetCreator {
   }
 
   /**
-   * Apply black backgrounds to rows below the last match in each round
+   * Apply black backgrounds to rounds that have fewer matches than the previous round
    */
   async applyBlackBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, black) {
     const requests = [];
 
-    for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
-      const round = matchData.rounds[roundIndex];
-      const startCol = roundIndex * columnsPerRound;
-      // For the final round, exclude the spacer column to avoid extending too far
-      const isLastRound = roundIndex === matchData.numRounds - 1;
-      const endCol = startCol + (isLastRound ? columnsPerRound - 1 : columnsPerRound);
+    // Calculate the final round's Loss T column (end of all data)
+    const finalRoundIndex = matchData.numRounds - 1;
+    const finalRoundStartCol = finalRoundIndex * columnsPerRound;
+    const finalRoundLossTCol = finalRoundStartCol + columnsPerRound - 2; // Exclude spacer column
 
-      // Calculate the row after the last match in this round (one row up as requested)
-      const lastMatchEndRow = 1 + (round.matches.length * 3); // Row after last match, moved up by 1
+    // Only apply to rounds after round 1
+    for (let roundIndex = 1; roundIndex < matchData.numRounds; roundIndex++) {
+      const currentRound = matchData.rounds[roundIndex];
+      const previousRound = matchData.rounds[roundIndex - 1];
       
-      // Find the end of Round 1 to determine black area
-      const round1 = matchData.rounds[0];
-      const round1EndRow = 1 + (round1.matches.length * 3); // Row after last Round 1 match, moved up by 1
+      // Only apply if current round has fewer matches than previous round
+      if (currentRound.matches.length >= previousRound.matches.length) {
+        continue;
+      }
 
-      // Apply black background from last match to end of Round 1
-      if (lastMatchEndRow < round1EndRow) {
+      const startCol = roundIndex * columnsPerRound;
+      // Black extends from current round start ALL THE WAY to the end of final round (Loss T column)
+      const endCol = finalRoundLossTCol + 1; // +1 because endColumnIndex is exclusive
+
+      // Calculate boundaries: from row after last data row of current round to last data row of previous round
+      const currentRoundLastDataRow = 1 + (currentRound.matches.length * 3) - 1; // Exclude final spacer
+      const previousRoundLastDataRow = 1 + (previousRound.matches.length * 3) - 1; // Exclude final spacer
+
+      // Only apply black if there's a gap to fill
+      if (currentRoundLastDataRow < previousRoundLastDataRow) {
         requests.push({
           repeatCell: {
             range: {
               sheetId: sheetId,
-              startRowIndex: lastMatchEndRow - 1, // Convert to 0-indexed
-              endRowIndex: round1EndRow - 1,
+              startRowIndex: currentRoundLastDataRow, // Start after current round's data (0-indexed)
+              endRowIndex: previousRoundLastDataRow, // End at previous round's boundary (exclusive)
               startColumnIndex: startCol,
-              endColumnIndex: endCol,
+              endColumnIndex: endCol, // Extend all the way to final round Loss T column
             },
             cell: {
               userEnteredFormat: {
@@ -1073,7 +1095,6 @@ class MatchSheetCreator {
       }
     }
 
-    // Apply black background requests
     if (requests.length > 0) {
       await this.sheetsService.batchUpdate(spreadsheetId, requests);
     }
@@ -1178,8 +1199,6 @@ class MatchSheetCreator {
             }
           }
         });
-
-        console.log(`📍 R${roundIndex + 1}M${mapping.sourceMatchIndex + 1} winner → R${nextRoundIndex + 1}M${mapping.destMatchIndex + 1}P${mapping.destPlayerIndex + 1} (${destSeedColLetter}${destRow}, ${destUsernameColLetter}${destRow})`);
       }
     }
 
@@ -1292,8 +1311,6 @@ class MatchSheetCreator {
               }
             }
           });
-
-          console.log(`📊 R${roundIndex + 1}M${matchIndex + 1}P${playerIndex + 1} Loss T formula → ${lossTColLetter}${currentPlayerRow}`);
         }
       }
     }
