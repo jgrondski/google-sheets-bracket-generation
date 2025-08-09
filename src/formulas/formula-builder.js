@@ -113,10 +113,9 @@ class FormulaBuilder {
   /**
    * Generate array formula for bulk operations
    * @param {string} baseFormula - Base formula to apply
-   * @param {string} range - Range to apply formula to
    * @returns {string} Array formula
    */
-  static arrayFormula(baseFormula, range) {
+  static arrayFormula(baseFormula) {
     return `=ARRAYFORMULA(${baseFormula})`;
   }
 

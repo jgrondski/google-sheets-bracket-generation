@@ -1,7 +1,6 @@
 import { hexToRgb, resolveColorScheme, FIXED_COLORS } from '../utils/color-utils.js';
 import { GoogleSheetsService } from './google-sheets-service.js';
 import { FONTS } from '../styles/styles.js';
-import { Player } from '../models/player.js';
 
 class QualsSheetCreator {
   constructor(auth) {
@@ -190,7 +189,7 @@ class QualsSheetCreator {
     ];
 
     // Player data (now using Player domain objects)
-    const playerRows = allPlayers.map((player, index) => {
+    const playerRows = allPlayers.map((player) => {
       // Get the bracket-specific color using the Player model
       const colorScheme = player.getColorScheme(config);
       const primaryColor = resolveColorScheme(colorScheme);

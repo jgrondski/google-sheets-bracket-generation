@@ -197,7 +197,7 @@ class TournamentRepository {
 
       // Check for duplicate seeds within each bracket (not across brackets)
       const brackets = this._getBracketStatistics(players);
-      for (const [bracketType, bracketStats] of Object.entries(brackets)) {
+      for (const bracketType of Object.keys(brackets)) {
         const bracketPlayers = players.filter((p) => p.bracketType === bracketType);
         const bracketSeeds = bracketPlayers.filter((p) => p.hasValidSeed()).map((p) => p.seed);
         const uniqueBracketSeeds = new Set(bracketSeeds);

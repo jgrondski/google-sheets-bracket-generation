@@ -50,34 +50,26 @@ class SheetsDataSource extends DataSource {
       }
 
       return players;
-    } catch (error) {
-      console.error('Error loading players from Google Sheets:', error.message);
+    } catch {
+      console.error('Error loading players from Google Sheets');
       return [];
     }
   }
 
   /**
    * Get matches from Google Sheets (from bracket sheets with results)
-   * @param {Object} options - Query options
    * @returns {Promise<[]>} Array of match-like objects
    */
-  async getMatches(options = {}) {
-    const { bracketType = 'gold', sheetName = null } = options;
-
-    try {
-      return [];
-    } catch (error) {
-      console.error('Error loading matches from Google Sheets:', error.message);
-      return [];
-    }
+  async getMatches() {
+    // Not implemented yet
+    return [];
   }
 
   /**
    * Get tournament configuration from spreadsheet properties/metadata
-   * @param {Object} options - Query options
    * @returns {Promise<Object>} Tournament configuration object
    */
-  async getConfiguration(options = {}) {
+  async getConfiguration() {
     try {
       const spreadsheet = await this.sheetsService.sheets.spreadsheets.get({
         spreadsheetId: this.spreadsheetId,
@@ -93,8 +85,8 @@ class SheetsDataSource extends DataSource {
           sheetType: sheet.properties.sheetType,
         })),
       };
-    } catch (error) {
-      console.error('Error loading configuration from Google Sheets:', error.message);
+    } catch {
+      console.error('Error loading configuration from Google Sheets');
       return {};
     }
   }
@@ -105,15 +97,8 @@ class SheetsDataSource extends DataSource {
    * @param {Object} options - Save options
    * @returns {Promise<void>}
    */
-  async savePlayers(players, options = {}) {
-    const { sheetName = 'Qualifiers' } = options;
-
-    try {
-      throw new Error('SheetsDataSource.savePlayers() not yet implemented');
-    } catch (error) {
-      console.error('Error saving players to Google Sheets:', error.message);
-      throw error;
-    }
+  async savePlayers(/* players, options = {} */) {
+    throw new Error('SheetsDataSource.savePlayers() not yet implemented');
   }
 
   /**
@@ -122,13 +107,8 @@ class SheetsDataSource extends DataSource {
    * @param {Object} options - Save options
    * @returns {Promise<void>}
    */
-  async saveMatches(matches, options = {}) {
-    try {
-      throw new Error('SheetsDataSource.saveMatches() not yet implemented');
-    } catch (error) {
-      console.error('Error saving matches to Google Sheets:', error.message);
-      throw error;
-    }
+  async saveMatches(/* matches, options = {} */) {
+    throw new Error('SheetsDataSource.saveMatches() not yet implemented');
   }
 
   /**
@@ -141,7 +121,7 @@ class SheetsDataSource extends DataSource {
         spreadsheetId: this.spreadsheetId,
       });
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

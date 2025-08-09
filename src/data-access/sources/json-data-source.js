@@ -94,19 +94,17 @@ class JsonDataSource extends DataSource {
 
   /**
    * Get matches from JSON data (currently returns empty - for future expansion)
-   * @param {Object} options - Query options
    * @returns {Promise<[]>} Array of match-like objects
    */
-  async getMatches(options = {}) {
+  async getMatches() {
     return [];
   }
 
   /**
    * Get tournament configuration
-   * @param {Object} options - Query options
    * @returns {Promise<Object>} Tournament configuration object
    */
-  async getConfiguration(options = {}) {
+  async getConfiguration() {
     const data = this._loadData();
     return {
       sheetName: data.options?.sheetName || 'Tournament Bracket',
@@ -142,7 +140,7 @@ class JsonDataSource extends DataSource {
   async isAvailable() {
     try {
       return existsSync(this.configPath);
-    } catch (error) {
+    } catch {
       return false;
     }
   }

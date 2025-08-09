@@ -236,11 +236,10 @@ class MatchSheetCreator {
    * @param {number} sheetId - Sheet ID
    * @param {BracketConfig} config - Configuration for bestOf settings
    * @param {number} numRounds - Number of rounds in the tournament
-   * @param {string} bracketType - Optional bracket type for bracket-specific settings
    * @returns {Array} Array of requests
    */
-  createHeaderRequests(sheetId, config, numRounds, bracketType = null) {
-    const bestOf = config.getBestOf(bracketType);
+  createHeaderRequests(sheetId, config, numRounds) {
+    const bestOf = config.getBestOf(null);
     const baseHeaders = ['Match', 'Seed', 'Username'];
 
     // Add game columns based on bestOf
@@ -356,7 +355,7 @@ class MatchSheetCreator {
     if (match.position1) {
       player1Values[1] = {
         userEnteredValue: {
-          numberValue: this.getBracketRelativeSeed(match.position1.seed, bracketType),
+          numberValue: this.getBracketRelativeSeed(match.position1.seed),
         },
       };
       player1Values[2] = {
@@ -381,7 +380,7 @@ class MatchSheetCreator {
     if (match.position2) {
       player2Values[1] = {
         userEnteredValue: {
-          numberValue: this.getBracketRelativeSeed(match.position2.seed, bracketType),
+          numberValue: this.getBracketRelativeSeed(match.position2.seed),
         },
       };
       player2Values[2] = {
@@ -422,10 +421,9 @@ class MatchSheetCreator {
   /**
    * Get bracket-relative seed (convert position seed to bracket-specific seed)
    * @param {number} positionSeed - Seed from the position (could be global or bracket-relative)
-   * @param {string} bracketType - Bracket type ('gold', 'silver')
    * @returns {number} Bracket-relative seed (1-based)
    */
-  getBracketRelativeSeed(positionSeed, bracketType) {
+  getBracketRelativeSeed(positionSeed) {
     // For bracket display, we want seeds 1 through bracketSize
     // The position.seed should already be bracket-relative from bracket generation
     // But if it's not, we need to ensure it's positive and within range
@@ -1355,10 +1353,9 @@ class MatchSheetCreator {
    * @param {Object} currentRound - Current round data
    * @param {Object} nextRound - Next round data
    * @param {number} roundIndex - Current round index
-   * @param {number} nextRoundIndex - Next round index
    * @returns {Array} Array of advancement mappings
    */
-  getAdvancementMappings(currentRound, nextRound, roundIndex, nextRoundIndex) {
+  getAdvancementMappings(currentRound, nextRound, roundIndex) {
     const mappings = [];
 
     if (roundIndex === 0) {

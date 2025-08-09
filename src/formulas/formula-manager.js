@@ -1,4 +1,5 @@
 import { GoogleSheetsService } from '../services/google-sheets-service.js';
+import { FormulaTemplates } from './formula-templates.js';
 
 /**
  * Formula Manager
@@ -106,7 +107,7 @@ class FormulaManager {
     const template = FormulaTemplates.winnerAdvancement(round, matchesInRound, getCellRef);
     const requests = [];
 
-    template.matches.forEach((match, index) => {
+    template.matches.forEach((match) => {
       const targetCell = getCellRef(match.matchIndex, 0); // Winner goes to player 1 position
       const targetCoords = this._parseA1Notation(targetCell);
 
@@ -151,17 +152,8 @@ class FormulaManager {
    */
   async applyResultTrackingFormulas(spreadsheetId, bracketSheet, matches) {
     const template = FormulaTemplates.matchResultTracking(matches);
-    const requests = [];
 
-    template.matches.forEach((match) => {
-      // For now, result tracking formulas will be applied to hidden columns
-      // This is preparation for future match tracking features
-      console.log(`Result tracking prepared for match ${match.matchId}`);
-    });
-
-    // Note: Actual implementation would apply formulas to tracking columns
-    // For Phase 3, we're setting up the framework
-
+    // Placeholder: tracking will be added later
     this._trackAppliedFormulas(bracketSheet, 'result-tracking', template);
 
     return {
@@ -243,7 +235,7 @@ class FormulaManager {
       formulasByType: {},
     };
 
-    for (const [sheetName, formulas] of this.appliedFormulas) {
+    for (const [, formulas] of this.appliedFormulas) {
       stats.totalFormulaSets += formulas.length;
 
       formulas.forEach((formula) => {
@@ -286,10 +278,9 @@ class FormulaManager {
    * @param {string} sheetName - Sheet name
    * @returns {number} Sheet ID
    */
-  _getSheetId(sheetName) {
-    // This is a placeholder - in real implementation, this would
-    // query the spreadsheet to get the actual sheet ID
-    return 0; // Default to first sheet for now
+  _getSheetId() {
+    // Placeholder: return 0 for now
+    return 0;
   }
 
   /**

@@ -127,7 +127,7 @@ class FormulaTemplates {
    * @returns {Object} Template with navigation formulas
    */
   static bracketNavigation(bracketConfig) {
-    const { spreadsheetId, sheetNames } = bracketConfig;
+    const { sheetNames } = bracketConfig;
 
     return {
       type: 'bracket-navigation',
@@ -152,7 +152,7 @@ class FormulaTemplates {
    * @returns {Object} Complete formula template set
    */
   static completeBracketFormulas(config) {
-    const { qualifierSheet, bracketSize, bracketSheet, rounds, spreadsheetId } = config;
+    const { qualifierSheet, bracketSize, bracketSheet, rounds } = config;
 
     const templates = {
       seeding: this.singleEliminationSeeding(qualifierSheet, bracketSize),
