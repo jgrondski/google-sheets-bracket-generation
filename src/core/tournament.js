@@ -1,8 +1,7 @@
 // ==================== src/core/tournament.js ====================
 
 import { CompleteBracket } from '../complete-bracket.js';
-import bracketValidatorDefault from './bracket-validator.js';
-const { BracketValidator } = bracketValidatorDefault;
+import { BracketValidator } from './bracket-validator.js';
 
 /**
  * Core tournament logic and bracket management
