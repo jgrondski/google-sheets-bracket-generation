@@ -65,7 +65,7 @@ class Match {
   /**
    * Generate winner advancement formula
    * @param {string} scoreCell1 - Cell reference for player 1 score
-   * @param {string} scoreCell2 - Cell reference for player 2 score  
+   * @param {string} scoreCell2 - Cell reference for player 2 score
    * @returns {string}
    */
   getWinnerFormula(scoreCell1, scoreCell2) {
@@ -79,8 +79,12 @@ class Match {
    * @returns {boolean}
    */
   isBye() {
-    return !this.player1.hasValidSeed() || !this.player2.hasValidSeed() ||
-           this.player1.name === 'TBD' || this.player2.name === 'TBD';
+    return (
+      !this.player1.hasValidSeed() ||
+      !this.player2.hasValidSeed() ||
+      this.player1.name === 'TBD' ||
+      this.player2.name === 'TBD'
+    );
   }
 
   /**
@@ -134,7 +138,7 @@ class Game {
     this.winner = null;
     this.tetrisStats = {
       player1: { tetrises: 0, lines: 0, level: 0 },
-      player2: { tetrises: 0, lines: 0, level: 0 }
+      player2: { tetrises: 0, lines: 0, level: 0 },
     };
   }
 

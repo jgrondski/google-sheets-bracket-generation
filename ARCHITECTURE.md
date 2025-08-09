@@ -5,6 +5,7 @@ This directory contains the refactored, modular architecture for the bracket gen
 ## Module System
 
 This project uses **ES6 modules** (`import`/`export`) instead of CommonJS (`require`/`module.exports`). Key benefits:
+
 - **Static analysis**: Better IDE support and tree-shaking
 - **Explicit imports**: Clear dependency relationships
 - **Modern standard**: Aligns with current JavaScript best practices
@@ -47,6 +48,7 @@ src/
 ## Key Principles
 
 ### Separation of Concerns
+
 - **Core**: Business logic independent of external systems
 - **Services**: Handle external system integrations (Google Sheets API)
 - **Commands**: Orchestrate the application flow
@@ -57,11 +59,13 @@ src/
 The styling system has been refactored to support dynamic color generation from any hex color input:
 
 #### Architecture Overview
+
 - **`color-utils.js`**: Core color manipulation utilities (hex-to-RGB, luminance, contrast)
 - **`dynamic-styles.js`**: Generates complete style sets from any color input
 - **`styles.js`**: Simplified interface that maintains backward compatibility
 
 #### Key Features
+
 - **Dynamic Generation**: Replaces ~200 lines of hardcoded color variants with ~50 lines of dynamic logic
 - **Custom Colors**: Users can specify any hex color (`#FF5733`) without code changes
 - **Preset Support**: Maintains built-in presets (`"gold"`, `"silver"`) for backward compatibility
@@ -69,6 +73,7 @@ The styling system has been refactored to support dynamic color generation from 
 - **Border Generation**: Creates harmonious border colors based on the primary color
 
 #### Color Flow
+
 ```
 User Config → resolveColorScheme() → generateCellFormats() → Google Sheets API
      ↓              ↓                      ↓
@@ -76,17 +81,20 @@ User Config → resolveColorScheme() → generateCellFormats() → Google Sheets
 ```
 
 #### Backward Compatibility
+
 - Existing configurations without `colorScheme` use bracket type as default color
 - All existing APIs remain unchanged
 - Gold/silver presets preserved for legacy support
 - **Utils**: Pure, reusable utility functions
 
 ### Testability
+
 - Core logic can be tested without Google Sheets API
 - Services can be mocked for testing
 - Each layer has minimal dependencies
 
 ### Maintainability
+
 - Single responsibility for each module
 - Clear dependencies between layers
 - Easy to locate and modify specific functionality
@@ -94,6 +102,7 @@ User Config → resolveColorScheme() → generateCellFormats() → Google Sheets
 ## Usage Examples
 
 ### New Modular Approach
+
 ```javascript
 import buildBracketCommandDefault from './src/commands/build-bracket-command.js';
 const { BuildBracketCommand } = buildBracketCommandDefault;
@@ -101,7 +110,7 @@ const { BuildBracketCommand } = buildBracketCommandDefault;
 async function generateBracket(auth) {
   const command = new BuildBracketCommand(auth);
   const result = await command.execute('./bracket-data.json');
-  
+
   if (result.success) {
     console.log('Bracket created:', result.spreadsheet.url);
   } else {
@@ -111,6 +120,7 @@ async function generateBracket(auth) {
 ```
 
 ### Legacy Compatibility
+
 ```javascript
 import bracketBuilder from './src/bracket-builder.js';
 const { buildBracket } = bracketBuilder;
@@ -120,6 +130,7 @@ await buildBracket(auth);
 ```
 
 ### Using Individual Components
+
 ```javascript
 import { BracketConfig } from './src/config/bracket-config.js';
 import { Tournament } from './src/core/tournament.js';
@@ -150,7 +161,7 @@ if (errors.length === 0) {
 3. **Extensibility**: Easy to add new bracket types or output formats
 4. **Debugging**: Easier to isolate issues to specific layers
 5. **Reusability**: Core bracket logic could work with other output systems
-6. **Modern ES6 Modules**: 
+6. **Modern ES6 Modules**:
    - Static imports enable better IDE support and error detection
    - Tree-shaking capabilities for optimized builds
    - Explicit dependency management

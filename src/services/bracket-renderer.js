@@ -1,10 +1,11 @@
 // ==================== src/services/bracket-renderer.js ====================
 
-import { GoogleSheetsService } from "./google-sheets-service.js";
-import RequestBuilderDefault from "../factories/request-builder.js";
+import { GoogleSheetsService } from './google-sheets-service.js';
+import RequestBuilderDefault from '../factories/request-builder.js';
 const { RequestBuilder } = RequestBuilderDefault;
-import PlayerGroup from "../models/player-group.js";
-import { getPosition } from "../utils/math-utils.js";
+import PlayerGroup from '../models/player-group.js';
+import { getPosition } from '../utils/math-utils.js';
+import { matchCellRef, winnerIfMaxScore } from '../formulas/index.js';
 
 /**
  * Service for rendering bracket layouts to Google Sheets
@@ -15,50 +16,34 @@ class BracketRenderer {
     this.requestBuilder = new RequestBuilder();
   }
 
-  // Convert 0-based column index to A1 letter
-  getColumnLetter(index) {
-    let result = "";
-    while (index >= 0) {
-      result = String.fromCharCode(65 + (index % 26)) + result;
-      index = Math.floor(index / 26) - 1;
-    }
-    return result;
-  }
-
   // Match sheet name for a bracket (e.g., "Gold Matches", "Silver Matches")
-  getMatchesSheetName(config, bracketType = "gold") {
+  getMatchesSheetName(config, bracketType = 'gold') {
     const bracketName = config.getBracketNameByType
       ? config.getBracketNameByType(bracketType)
       : config.getBracketName();
-    return `${bracketName.split(" ")[0]} Matches`;
+    return `${bracketName.split(' ')[0]} Matches`;
   }
 
   // Must mirror MatchSheetCreator.getColumnsPerRound
   getMatchSheetColumnsPerRound(config, bracketType = null) {
-    const bestOf = config.getBestOf
-      ? config.getBestOf(bracketType)
-      : config.getBestOf();
+    const bestOf = config.getBestOf ? config.getBestOf(bracketType) : config.getBestOf();
     // Match + Seed + Username + Score + Game1..N + Loss T + Spacer
     return 4 + bestOf + 1 + 1;
   }
 
   // Build an A1 reference into the Match sheet for a given round/match/player/field
   // field: "seed" | "username" | "score"
-  getMatchSheetRefA1(
-    config,
-    bracketType,
-    roundIndex,
-    matchIndex,
-    playerIndex,
-    field
-  ) {
+  getMatchSheetRefA1(config, bracketType, roundIndex, matchIndex, playerIndex, field) {
     const sheet = this.getMatchesSheetName(config, bracketType);
     const colsPerRound = this.getMatchSheetColumnsPerRound(config, bracketType);
-    const startCol = roundIndex * colsPerRound;
-    const colOffset = field === "seed" ? 1 : field === "username" ? 2 : 3; // Score=3
-    const col = this.getColumnLetter(startCol + colOffset);
-    const row = 2 + matchIndex * 3 + playerIndex; // rows 2,3 then spacer
-    return `='${sheet}'!${col}${row}`;
+    return matchCellRef({
+      sheet,
+      colsPerRound,
+      roundIndex,
+      matchIndex,
+      playerIndex,
+      field,
+    });
   }
 
   /**
@@ -67,15 +52,8 @@ class BracketRenderer {
    * @param {BracketLayout} layout - Bracket layout instance
    * @returns {Promise<void>}
    */
-  async renderBracket(spreadsheetId, layout, config, bracketType = "gold") {
-    return this.renderBracketOnSheet(
-      spreadsheetId,
-      layout,
-      0,
-      "gold",
-      config,
-      bracketType
-    );
+  async renderBracket(spreadsheetId, layout, config, bracketType = 'gold') {
+    return this.renderBracketOnSheet(spreadsheetId, layout, 0, 'gold', config, bracketType);
   }
 
   /**
@@ -89,9 +67,9 @@ class BracketRenderer {
     spreadsheetId,
     layout,
     sheetId,
-    colorScheme = "gold",
+    colorScheme = 'gold',
     config = null,
-    bracketType = "gold"
+    bracketType = 'gold'
   ) {
     const requests = [];
 
@@ -105,16 +83,12 @@ class BracketRenderer {
             columnCount: bounds.bgEndCol,
           },
         },
-        fields: "gridProperties.columnCount",
+        fields: 'gridProperties.columnCount',
       },
     });
 
     // 2. Setup background and dimensions
-    const backgroundRequests = this.createBackgroundRequests(
-      layout,
-      sheetId,
-      colorScheme
-    );
+    const backgroundRequests = this.createBackgroundRequests(layout, sheetId, colorScheme);
     requests.push(...backgroundRequests);
 
     // 3. Setup row and column dimensions
@@ -132,11 +106,7 @@ class BracketRenderer {
     requests.push(...playerGroupRequests);
 
     // 5. Create connector borders
-    const connectorRequests = await this.createConnectorRequests(
-      layout,
-      sheetId,
-      colorScheme
-    );
+    const connectorRequests = await this.createConnectorRequests(layout, sheetId, colorScheme);
     requests.push(...connectorRequests);
 
     // 6. Create champion styling
@@ -159,7 +129,7 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createBackgroundRequests(layout, sheetId = 0, colorScheme = "gold") {
+  createBackgroundRequests(layout, sheetId = 0, colorScheme = 'gold') {
     const bounds = layout.calculateGridBounds();
     return this.requestBuilder.createBackgroundRequest(
       bounds.bgEndRow,
@@ -182,10 +152,7 @@ class BracketRenderer {
     const requests = [];
 
     // Row dimensions
-    const rowRequests = this.requestBuilder.createRowDimensionRequests(
-      bounds.bgEndRow,
-      sheetId
-    );
+    const rowRequests = this.requestBuilder.createRowDimensionRequests(bounds.bgEndRow, sheetId);
     requests.push(...rowRequests);
 
     // Column dimensions
@@ -211,17 +178,17 @@ class BracketRenderer {
   createPlayerGroupRequests(
     layout,
     sheetId = 0,
-    colorScheme = "gold",
+    colorScheme = 'gold',
     config = null,
-    bracketType = "gold"
+    bracketType = 'gold'
   ) {
     const requests = [];
     const rounds = layout.getRounds();
     const lastRoundIdx = layout.getLastRoundIndex();
 
     const connectorType = {
-      TOP: "TOP",
-      BOTTOM: "BOTTOM",
+      TOP: 'TOP',
+      BOTTOM: 'BOTTOM',
     };
 
     const playerGroups = [];
@@ -252,14 +219,7 @@ class BracketRenderer {
 
         // Skip PlayerGroup creation entirely for the final round to avoid score cell
         if (r !== lastRoundIdx) {
-          const group = new PlayerGroup(
-            row - 1,
-            col - 1,
-            p.seed,
-            p.name,
-            p.score,
-            conType
-          );
+          const group = new PlayerGroup(row - 1, col - 1, p.seed, p.name, p.score, conType);
           group.roundIndex = r;
           group.isBye = p.isBye || false;
           playerGroups.push(group);
@@ -290,7 +250,7 @@ class BracketRenderer {
               r,
               matchIndex,
               playerIndex,
-              "seed"
+              'seed'
             );
             const nameRef = this.getMatchSheetRefA1(
               config,
@@ -298,7 +258,7 @@ class BracketRenderer {
               r,
               matchIndex,
               playerIndex,
-              "username"
+              'username'
             );
             const scoreRef = this.getMatchSheetRefA1(
               config,
@@ -306,7 +266,7 @@ class BracketRenderer {
               r,
               matchIndex,
               playerIndex,
-              "score"
+              'score'
             );
 
             const seedValue = { formulaValue: seedRef };
@@ -314,13 +274,7 @@ class BracketRenderer {
             const scoreValue = { formulaValue: scoreRef };
 
             requests.push(
-              ...group.toRequests(
-                seedValue,
-                nameValue,
-                scoreValue,
-                sheetId,
-                colorScheme
-              )
+              ...group.toRequests(seedValue, nameValue, scoreValue, sheetId, colorScheme)
             );
           }
         }
@@ -339,15 +293,13 @@ class BracketRenderer {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  async createConnectorRequests(layout, sheetId = 0, colorScheme = "gold") {
-    const connectorBuilder = await import("../connectors/connector-builder.js");
+  async createConnectorRequests(layout, sheetId = 0, colorScheme = 'gold') {
+    const connectorBuilder = await import('../connectors/connector-builder.js');
     const { buildConnectors } = connectorBuilder.default;
     const lastRoundIdx = layout.getLastRoundIndex();
 
     // Only build connectors for non-final rounds
-    const filteredGroups = this.playerGroups.filter(
-      (pg) => pg.roundIndex < lastRoundIdx
-    );
+    const filteredGroups = this.playerGroups.filter((pg) => pg.roundIndex < lastRoundIdx);
     return buildConnectors(filteredGroups, sheetId, colorScheme);
   }
 
@@ -364,53 +316,49 @@ class BracketRenderer {
   createChampionRequests(
     layout,
     sheetId = 0,
-    colorScheme = "gold",
+    colorScheme = 'gold',
     config = null,
-    bracketType = "gold"
+    bracketType = 'gold'
   ) {
     const championPos = layout.getChampionPosition();
 
     // Start with base merge/formatting/header requests
-    const requests = this.requestBuilder.createChampionRequests(
-      championPos,
-      sheetId,
-      colorScheme
-    );
+    const requests = this.requestBuilder.createChampionRequests(championPos, sheetId, colorScheme);
 
-    // If we don't have config, we can't build references; return formatting only
     if (!config) return requests;
 
     // Compute final round references from Matches sheet
     const finalRoundIndex = layout.getLastRoundIndex() - 1; // last actual round before champion
     const colsPerRound = this.getMatchSheetColumnsPerRound(config, bracketType);
-    const startCol = finalRoundIndex * colsPerRound;
-    const seedColLetter = this.getColumnLetter(startCol + 1); // Seed
-    const usernameColLetter = this.getColumnLetter(startCol + 2); // Username
-    const scoreColLetter = this.getColumnLetter(startCol + 3); // Score
+    const startCol0 = finalRoundIndex * colsPerRound;
 
-    const row1 = 2; // Final match player 1 row
-    const row2 = 3; // Final match player 2 row
     const sheet = this.getMatchesSheetName(config, bracketType);
     const maxScore = config.getMaxScore(bracketType);
 
-    // Build champion formulas based on final match winner
-    const seedFormula = `=IF('${sheet}'!${scoreColLetter}${row1}=${maxScore},'${sheet}'!${seedColLetter}${row1},IF('${sheet}'!${scoreColLetter}${row2}=${maxScore},'${sheet}'!${seedColLetter}${row2},""))`;
-    const nameFormula = `=IF('${sheet}'!${scoreColLetter}${row1}=${maxScore},'${sheet}'!${usernameColLetter}${row1},IF('${sheet}'!${scoreColLetter}${row2}=${maxScore},'${sheet}'!${usernameColLetter}${row2},""))`;
+    const seedFormula = winnerIfMaxScore({
+      sheet,
+      scoreCol0: startCol0 + 3,
+      seedOrNameCol0: startCol0 + 1,
+      row1: 2,
+      row2: 3,
+      maxScore,
+    });
+
+    const nameFormula = winnerIfMaxScore({
+      sheet,
+      scoreCol0: startCol0 + 3,
+      seedOrNameCol0: startCol0 + 2,
+      row1: 2,
+      row2: 3,
+      maxScore,
+    });
 
     // Write formulas into the merged champion seed and name cells (top-left only)
     requests.push(
       {
         updateCells: {
-          rows: [
-            {
-              values: [
-                {
-                  userEnteredValue: { formulaValue: seedFormula },
-                },
-              ],
-            },
-          ],
-          fields: "userEnteredValue.formulaValue",
+          rows: [{ values: [{ userEnteredValue: { formulaValue: seedFormula } }] }],
+          fields: 'userEnteredValue.formulaValue',
           start: {
             sheetId,
             rowIndex: championPos.champMergeStart,
@@ -420,16 +368,8 @@ class BracketRenderer {
       },
       {
         updateCells: {
-          rows: [
-            {
-              values: [
-                {
-                  userEnteredValue: { formulaValue: nameFormula },
-                },
-              ],
-            },
-          ],
-          fields: "userEnteredValue.formulaValue",
+          rows: [{ values: [{ userEnteredValue: { formulaValue: nameFormula } }] }],
+          fields: 'userEnteredValue.formulaValue',
           start: {
             sheetId,
             rowIndex: championPos.champMergeStart,
@@ -448,10 +388,10 @@ class BracketRenderer {
    * @returns {Object} Prepared value object
    */
   prepareValueObject(value) {
-    if (typeof value === "number" && !isNaN(value) && value !== "") {
+    if (typeof value === 'number' && !isNaN(value) && value !== '') {
       return { numberValue: value };
     } else {
-      return { stringValue: String(value || "") };
+      return { stringValue: String(value || '') };
     }
   }
 }

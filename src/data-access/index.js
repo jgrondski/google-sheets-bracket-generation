@@ -4,7 +4,7 @@
 // Interfaces
 export { DataSource } from './interfaces/data-source.js';
 
-// Data Sources  
+// Data Sources
 export { JsonDataSource } from './sources/json-data-source.js';
 export { SheetsDataSource } from './sources/sheets-data-source.js';
 

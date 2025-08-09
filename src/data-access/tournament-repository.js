@@ -1,6 +1,4 @@
 import { DataSourceFactory } from './data-source-factory.js';
-import { Player } from '../models/player.js';
-import { Match } from '../models/match.js';
 
 /**
  * Tournament data repository
@@ -47,10 +45,10 @@ class TournamentRepository {
    * @returns {Promise<Player[]>} Array of Player domain objects for the bracket
    */
   async getPlayersByBracket(bracketType, options = {}) {
-    return await this.dataSource.getPlayers({ 
-      bracketType, 
-      asDomainObjects: true, 
-      ...options 
+    return await this.dataSource.getPlayers({
+      bracketType,
+      asDomainObjects: true,
+      ...options,
     });
   }
 
@@ -132,7 +130,7 @@ class TournamentRepository {
       playerCount: allPlayers.length,
       matchCount: allMatches.length,
       sheetName: config.sheetName || 'Unknown',
-      brackets: this._getBracketStatistics(allPlayers)
+      brackets: this._getBracketStatistics(allPlayers),
     };
   }
 
@@ -143,25 +141,31 @@ class TournamentRepository {
    */
   _getBracketStatistics(players) {
     const brackets = {};
-    
+
     for (const player of players) {
       const bracketType = player.bracketType || 'unknown';
-      
+
       if (!brackets[bracketType]) {
         brackets[bracketType] = {
           playerCount: 0,
-          seedRange: { min: null, max: null }
+          seedRange: { min: null, max: null },
         };
       }
 
       brackets[bracketType].playerCount++;
-      
+
       if (player.hasValidSeed()) {
         const seed = player.seed;
-        if (brackets[bracketType].seedRange.min === null || seed < brackets[bracketType].seedRange.min) {
+        if (
+          brackets[bracketType].seedRange.min === null ||
+          seed < brackets[bracketType].seedRange.min
+        ) {
           brackets[bracketType].seedRange.min = seed;
         }
-        if (brackets[bracketType].seedRange.max === null || seed > brackets[bracketType].seedRange.max) {
+        if (
+          brackets[bracketType].seedRange.max === null ||
+          seed > brackets[bracketType].seedRange.max
+        ) {
           brackets[bracketType].seedRange.max = seed;
         }
       }
@@ -194,8 +198,8 @@ class TournamentRepository {
       // Check for duplicate seeds within each bracket (not across brackets)
       const brackets = this._getBracketStatistics(players);
       for (const [bracketType, bracketStats] of Object.entries(brackets)) {
-        const bracketPlayers = players.filter(p => p.bracketType === bracketType);
-        const bracketSeeds = bracketPlayers.filter(p => p.hasValidSeed()).map(p => p.seed);
+        const bracketPlayers = players.filter((p) => p.bracketType === bracketType);
+        const bracketSeeds = bracketPlayers.filter((p) => p.hasValidSeed()).map((p) => p.seed);
         const uniqueBracketSeeds = new Set(bracketSeeds);
         if (bracketSeeds.length !== uniqueBracketSeeds.size) {
           errors.push(`Duplicate player seeds found in ${bracketType} bracket`);
@@ -203,7 +207,7 @@ class TournamentRepository {
       }
 
       // Check for empty player names
-      const emptyNames = players.filter(p => !p.name || p.name.trim() === '');
+      const emptyNames = players.filter((p) => !p.name || p.name.trim() === '');
       if (emptyNames.length > 0) {
         errors.push(`${emptyNames.length} players have empty names`);
       }
@@ -217,9 +221,8 @@ class TournamentRepository {
         errors,
         warnings,
         playerCount: players.length,
-        matchCount: matches.length
+        matchCount: matches.length,
       };
-
     } catch (error) {
       errors.push(`Validation failed: ${error.message}`);
       return { valid: false, errors, warnings };

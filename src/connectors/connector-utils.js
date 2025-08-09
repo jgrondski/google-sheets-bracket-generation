@@ -8,11 +8,8 @@
  */
 function a1ToRowCol(cell) {
   const match = cell.match(/([A-Z]+)(\d+)/);
-  if (!match) throw new Error("Invalid cell: " + cell);
-  const col =
-    match[1]
-      .split("")
-      .reduce((acc, c) => acc * 26 + (c.charCodeAt(0) - 64), 0) - 1;
+  if (!match) throw new Error('Invalid cell: ' + cell);
+  const col = match[1].split('').reduce((acc, c) => acc * 26 + (c.charCodeAt(0) - 64), 0) - 1;
   const row = parseInt(match[2], 10) - 1;
   return { row, col };
 }
@@ -31,7 +28,7 @@ function formatBorderRequest(row, col, borders, color, width, sheetId = 0) {
   const borderObj = {};
   for (const side of borders) {
     borderObj[side] = {
-      style: "SOLID_MEDIUM",
+      style: 'SOLID_MEDIUM',
       width,
       color,
     };

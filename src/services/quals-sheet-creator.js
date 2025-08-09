@@ -10,21 +10,20 @@ class QualsSheetCreator {
   }
 
   async create(spreadsheetId, tournament, config) {
-    const sheetName = "Qualifiers";
+    const sheetName = 'Qualifiers';
     const sheetId = await this.googleSheetsService.addSheet(spreadsheetId, sheetName);
 
     // Get all bracket types and combine their players (using domain objects)
     const allPlayers = [];
-    
+
     for (const bracketType of config.getAvailableBracketTypes()) {
       // Get players as domain objects with proper seeding
-      const players = config.getPlayersByType(bracketType, true)
-        .map((player, index) => {
-          // Update the seed to be continuous across all brackets
-          player.seed = allPlayers.length + index + 1;
-          return player;
-        });
-      
+      const players = config.getPlayersByType(bracketType, true).map((player, index) => {
+        // Update the seed to be continuous across all brackets
+        player.seed = allPlayers.length + index + 1;
+        return player;
+      });
+
       allPlayers.push(...players);
     }
 
@@ -92,12 +91,12 @@ class QualsSheetCreator {
       // Set gray background for entire bounded area (A1 through D + final row)
       {
         repeatCell: {
-          range: { 
-            sheetId, 
-            startRowIndex: 0, 
+          range: {
+            sheetId,
+            startRowIndex: 0,
             endRowIndex: totalRows,
-            startColumnIndex: 0, 
-            endColumnIndex: 4 
+            startColumnIndex: 0,
+            endColumnIndex: 4,
           },
           cell: {
             userEnteredFormat: {
@@ -113,7 +112,7 @@ class QualsSheetCreator {
           rows: [
             {
               values: [
-                { 
+                {
                   userEnteredValue: { stringValue: '' },
                   userEnteredFormat: {
                     backgroundColor: grayBackgroundColor, // A1 gray background
@@ -137,7 +136,7 @@ class QualsSheetCreator {
                     verticalAlignment: 'MIDDLE',
                   },
                 },
-                { 
+                {
                   userEnteredValue: { stringValue: '' },
                   userEnteredFormat: {
                     backgroundColor: grayBackgroundColor, // D1 gray background
@@ -147,7 +146,8 @@ class QualsSheetCreator {
             },
           ],
           start: { sheetId, rowIndex: 0, columnIndex: 0 },
-          fields: 'userEnteredValue,userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)',
+          fields:
+            'userEnteredValue,userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)',
         },
       },
       // Empty row 2 (8px height, all gray background)
@@ -156,25 +156,25 @@ class QualsSheetCreator {
           rows: [
             {
               values: [
-                { 
+                {
                   userEnteredValue: { stringValue: '' },
                   userEnteredFormat: {
                     backgroundColor: grayBackgroundColor,
                   },
                 },
-                { 
+                {
                   userEnteredValue: { stringValue: '' },
                   userEnteredFormat: {
                     backgroundColor: grayBackgroundColor,
                   },
                 },
-                { 
+                {
                   userEnteredValue: { stringValue: '' },
                   userEnteredFormat: {
                     backgroundColor: grayBackgroundColor,
                   },
                 },
-                { 
+                {
                   userEnteredValue: { stringValue: '' },
                   userEnteredFormat: {
                     backgroundColor: grayBackgroundColor,
@@ -195,15 +195,17 @@ class QualsSheetCreator {
       const colorScheme = player.getColorScheme(config);
       const primaryColor = resolveColorScheme(colorScheme);
       const seedBackgroundColor = hexToRgb(primaryColor);
-      
+
       return {
         values: [
-          { // Column A - empty with explicit gray background
+          {
+            // Column A - empty with explicit gray background
             userEnteredFormat: {
               backgroundColor: grayBackgroundColor,
             },
           },
-          { // Column B - Seed (continuous numbering)
+          {
+            // Column B - Seed (continuous numbering)
             userEnteredValue: { numberValue: player.seed },
             userEnteredFormat: {
               backgroundColor: seedBackgroundColor, // Individual seeds use bracket color
@@ -212,7 +214,8 @@ class QualsSheetCreator {
               verticalAlignment: 'MIDDLE',
             },
           },
-          { // Column C - Player Name  
+          {
+            // Column C - Player Name
             userEnteredValue: { stringValue: player.getDisplayName() },
             userEnteredFormat: {
               backgroundColor: grayBackgroundColor, // Explicitly set gray background for player names
@@ -221,7 +224,8 @@ class QualsSheetCreator {
               verticalAlignment: 'MIDDLE',
             },
           },
-          { // Column D - empty with explicit gray background
+          {
+            // Column D - empty with explicit gray background
             userEnteredFormat: {
               backgroundColor: grayBackgroundColor,
             },
@@ -234,7 +238,8 @@ class QualsSheetCreator {
       updateCells: {
         rows: playerRows,
         start: { sheetId, rowIndex: 2, columnIndex: 0 }, // Start at row 3 (index 2) because of header + empty row
-        fields: 'userEnteredValue,userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)',
+        fields:
+          'userEnteredValue,userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)',
       },
     });
 

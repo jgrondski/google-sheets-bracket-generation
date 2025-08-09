@@ -1,7 +1,5 @@
 // ==================== src/core/bracket-validator.js ====================
 
-import { isPowerOfTwo, nextPowerOfTwo } from "../utils/math-utils.js";
-
 /**
  * Validation logic for tournament brackets
  */
@@ -15,24 +13,24 @@ class BracketValidator {
     const errors = [];
 
     if (!config) {
-      errors.push("Configuration is required");
+      errors.push('Configuration is required');
       return errors;
     }
 
     // Validate players
     const players = config.getPlayers();
     if (!players || players.length === 0) {
-      errors.push("At least one player is required");
+      errors.push('At least one player is required');
     }
 
     if (players && players.length < 2) {
-      errors.push("Tournament must have at least 2 players");
+      errors.push('Tournament must have at least 2 players');
     }
 
     // Validate bracket size
     const bracketSize = config.getBracketSize();
     if (!Number.isInteger(bracketSize) || bracketSize < 2) {
-      errors.push("Bracket size must be an integer >= 2");
+      errors.push('Bracket size must be an integer >= 2');
     }
 
     // Note: We don't require bracket size to be a power of 2
@@ -40,21 +38,17 @@ class BracketValidator {
 
     // Check if bracket size accommodates all players
     if (players && players.length > bracketSize) {
-      errors.push(
-        `Bracket size (${bracketSize}) is smaller than player count (${players.length})`
-      );
+      errors.push(`Bracket size (${bracketSize}) is smaller than player count (${players.length})`);
     }
 
     // Validate player names
     if (players) {
       const duplicateNames = this.findDuplicatePlayerNames(players);
       if (duplicateNames.length > 0) {
-        errors.push(
-          `Duplicate player names found: ${duplicateNames.join(", ")}`
-        );
+        errors.push(`Duplicate player names found: ${duplicateNames.join(', ')}`);
       }
 
-      const emptyNames = players.filter((p) => !p.name || p.name.trim() === "");
+      const emptyNames = players.filter((p) => !p.name || p.name.trim() === '');
       if (emptyNames.length > 0) {
         errors.push(`${emptyNames.length} players have empty names`);
       }
@@ -72,21 +66,21 @@ class BracketValidator {
     const errors = [];
 
     if (!bracket) {
-      errors.push("Bracket is required");
+      errors.push('Bracket is required');
       return errors;
     }
 
     // Validate basic bracket properties
     if (!bracket.numRounds || bracket.numRounds < 1) {
-      errors.push("Bracket must have at least 1 round");
+      errors.push('Bracket must have at least 1 round');
     }
 
     if (bracket.actualPlayerCount < 1) {
-      errors.push("Bracket must have at least 1 player");
+      errors.push('Bracket must have at least 1 player');
     }
 
     if (bracket.bracketSize < bracket.actualPlayerCount) {
-      errors.push("Bracket size cannot be smaller than actual player count");
+      errors.push('Bracket size cannot be smaller than actual player count');
     }
 
     // Note: bracket.bracketSize should be a power of 2 (handled by CompleteBracket)
@@ -123,8 +117,8 @@ class BracketValidator {
       }
     });
 
-    Object.entries(nameCount).forEach(([name, count]) => {
-      if (count > 1) {
+    Object.keys(nameCount).forEach((name) => {
+      if (nameCount[name] > 1) {
         duplicates.push(name);
       }
     });
@@ -149,7 +143,7 @@ class BracketValidator {
     // Check for duplicate seeds
     const uniqueSeeds = new Set(seeds);
     if (uniqueSeeds.size !== seeds.length) {
-      errors.push("Duplicate seeds found");
+      errors.push('Duplicate seeds found');
     }
 
     // Check for valid seed range
@@ -157,24 +151,19 @@ class BracketValidator {
     const minSeed = Math.min(...seeds);
 
     if (minSeed < 1) {
-      errors.push("Seeds must start from 1");
+      errors.push('Seeds must start from 1');
     }
 
     if (maxSeed > players.length) {
-      errors.push(
-        `Highest seed (${maxSeed}) exceeds player count (${players.length})`
-      );
+      errors.push(`Highest seed (${maxSeed}) exceeds player count (${players.length})`);
     }
 
     // Check for gaps in seeding
-    const expectedSeeds = Array.from(
-      { length: players.length },
-      (_, i) => i + 1
-    );
+    const expectedSeeds = Array.from({ length: players.length }, (_, i) => i + 1);
     const missingSeeds = expectedSeeds.filter((seed) => !seeds.includes(seed));
 
     if (missingSeeds.length > 0) {
-      errors.push(`Missing seeds: ${missingSeeds.join(", ")}`);
+      errors.push(`Missing seeds: ${missingSeeds.join(', ')}`);
     }
 
     return errors;
@@ -197,9 +186,7 @@ class BracketValidator {
     // Warn about unused players
     if (allPlayers.length > players.length) {
       const unused = allPlayers.length - players.length;
-      warnings.push(
-        `${unused} players will not be included due to bracket size limit`
-      );
+      warnings.push(`${unused} players will not be included due to bracket size limit`);
     }
 
     // Warn about excessive bracket size
@@ -212,13 +199,11 @@ class BracketValidator {
     // Warn about many byes
     const byes = bracketSize - players.length;
     if (byes > players.length / 2) {
-      warnings.push(
-        `High number of byes (${byes}) relative to player count (${players.length})`
-      );
+      warnings.push(`High number of byes (${byes}) relative to player count (${players.length})`);
     }
 
     return warnings;
   }
 }
 
-export default { BracketValidator };
+export { BracketValidator };

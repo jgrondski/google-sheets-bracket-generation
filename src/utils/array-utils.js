@@ -57,7 +57,7 @@ function groupBy(array, keyFn) {
  */
 function uniqueBy(array, keyFn) {
   const seen = new Set();
-  return array.filter(item => {
+  return array.filter((item) => {
     const key = keyFn(item);
     if (seen.has(key)) {
       return false;
@@ -75,7 +75,7 @@ function uniqueBy(array, keyFn) {
  */
 function flatten(array, depth = 1) {
   if (depth === 0) return array.slice();
-  
+
   return array.reduce((acc, item) => {
     if (Array.isArray(item)) {
       acc.push(...flatten(item, depth - 1));
@@ -86,10 +86,4 @@ function flatten(array, depth = 1) {
   }, []);
 }
 
-export {
-  chunk,
-  shuffle,
-  groupBy,
-  uniqueBy,
-  flatten,
-};
+export { chunk, shuffle, groupBy, uniqueBy, flatten };

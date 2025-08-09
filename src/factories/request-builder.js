@@ -1,6 +1,6 @@
 // ==================== src/factories/request-builder.js ====================
 
-import { getCellFormats, DIMENSIONS } from "../styles/styles.js";
+import { getCellFormats, DIMENSIONS } from '../styles/styles.js';
 
 /**
  * Factory for building Google Sheets API requests
@@ -14,7 +14,7 @@ class RequestBuilder {
    * @param {string} colorScheme - 'gold' or 'silver'
    * @returns {Array} Array of requests
    */
-  createBackgroundRequest(endRow, endCol, sheetId = 0, colorScheme = "gold") {
+  createBackgroundRequest(endRow, endCol, sheetId = 0, colorScheme = 'gold') {
     const CELL_FORMATS = getCellFormats(colorScheme);
     return [
       {
@@ -27,7 +27,7 @@ class RequestBuilder {
             endColumnIndex: endCol,
           },
           cell: { userEnteredFormat: CELL_FORMATS.background },
-          fields: "userEnteredFormat.backgroundColor",
+          fields: 'userEnteredFormat.backgroundColor',
         },
       },
     ];
@@ -47,12 +47,12 @@ class RequestBuilder {
         updateDimensionProperties: {
           range: {
             sheetId: sheetId,
-            dimension: "ROWS",
+            dimension: 'ROWS',
             startIndex: r,
             endIndex: r + 1,
           },
           properties: { pixelSize: DIMENSIONS.rowHeight },
-          fields: "pixelSize",
+          fields: 'pixelSize',
         },
       });
     }
@@ -70,14 +70,7 @@ class RequestBuilder {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createColumnDimensionRequests(
-    colCount,
-    seedIdx,
-    nameIdx,
-    nameCols,
-    connectorCols,
-    sheetId = 0
-  ) {
+  createColumnDimensionRequests(colCount, seedIdx, nameIdx, nameCols, connectorCols, sheetId = 0) {
     const requests = [];
 
     for (let c = 0; c < colCount; c++) {
@@ -100,12 +93,12 @@ class RequestBuilder {
         updateDimensionProperties: {
           range: {
             sheetId: sheetId,
-            dimension: "COLUMNS",
+            dimension: 'COLUMNS',
             startIndex: c,
             endIndex: c + 1,
           },
           properties: { pixelSize: width },
-          fields: "pixelSize",
+          fields: 'pixelSize',
         },
       });
     }
@@ -119,11 +112,10 @@ class RequestBuilder {
    * @param {number} sheetId - Target sheet ID
    * @returns {Array} Array of requests
    */
-  createChampionRequests(championPos, sheetId = 0, colorScheme = "gold") {
+  createChampionRequests(championPos, sheetId = 0, colorScheme = 'gold') {
     const requests = [];
     const CELL_FORMATS = getCellFormats(colorScheme);
-    const { champion, champMergeStart, champMergeEnd, seedIdx, nameIdx } =
-      championPos;
+    const { champion, champMergeStart, champMergeEnd, seedIdx, nameIdx } = championPos;
 
     // Create merge requests for seed and name cells
     const mergeRequests = [seedIdx, nameIdx].map((idx) => ({
@@ -135,7 +127,7 @@ class RequestBuilder {
           startColumnIndex: idx,
           endColumnIndex: idx + 1,
         },
-        mergeType: "MERGE_ALL",
+        mergeType: 'MERGE_ALL',
       },
     }));
     requests.push(...mergeRequests);
@@ -143,7 +135,7 @@ class RequestBuilder {
     // Champion seed cell
     const champSeedCell = Number.isFinite(champion.seed)
       ? { userEnteredValue: { numberValue: champion.seed } }
-      : { userEnteredValue: { stringValue: "" } };
+      : { userEnteredValue: { stringValue: '' } };
     champSeedCell.userEnteredFormat = CELL_FORMATS.championSeed;
 
     requests.push({
@@ -154,7 +146,7 @@ class RequestBuilder {
           columnIndex: seedIdx,
         },
         rows: [{ values: [champSeedCell] }],
-        fields: "userEnteredValue,userEnteredFormat",
+        fields: 'userEnteredValue,userEnteredFormat',
       },
     });
 
@@ -170,13 +162,13 @@ class RequestBuilder {
           {
             values: [
               {
-                userEnteredValue: { stringValue: champion.name || "" },
+                userEnteredValue: { stringValue: champion.name || '' },
                 userEnteredFormat: CELL_FORMATS.championName,
               },
             ],
           },
         ],
-        fields: "userEnteredValue,userEnteredFormat",
+        fields: 'userEnteredValue,userEnteredFormat',
       },
     });
 
@@ -193,7 +185,7 @@ class RequestBuilder {
           startColumnIndex: nameIdx,
           endColumnIndex: nameIdx + 1,
         },
-        mergeType: "MERGE_ALL",
+        mergeType: 'MERGE_ALL',
       },
     });
 
@@ -208,13 +200,13 @@ class RequestBuilder {
           {
             values: [
               {
-                userEnteredValue: { stringValue: "Champion" },
+                userEnteredValue: { stringValue: 'Champion' },
                 userEnteredFormat: CELL_FORMATS.championHeader,
               },
             ],
           },
         ],
-        fields: "userEnteredValue,userEnteredFormat",
+        fields: 'userEnteredValue,userEnteredFormat',
       },
     });
 

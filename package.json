@@ -7,7 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "example": "node examples/new-architecture-example.js",
     "validate-config": "node -e \"import('./src/config/bracket-config.js').then(({BracketConfig}) => { const config = BracketConfig.fromFile('./bracket-data.json'); console.log('Config Summary:', config.getSummary()); const errors = config.validate(); console.log('Validation:', errors.length === 0 ? 'PASSED' : 'ERRORS: ' + errors.join(', ')); });\"",
-    "start": "node app.js"
+    "start": "node app.js",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "repository": {
     "type": "git",
@@ -24,5 +28,13 @@
   "dependencies": {
     "dotenv": "^17.2.1",
     "googleapis": "^154.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2"
   }
 }

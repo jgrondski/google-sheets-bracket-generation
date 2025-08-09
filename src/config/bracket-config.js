@@ -1,9 +1,9 @@
 // ==================== src/config/bracket-config.js ====================
 
-import { readFileSync } from "fs";
-import { resolve } from "path";
-import { Player } from "../models/player.js";
-import { TournamentRepository } from "../data-access/tournament-repository.js";
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { Player } from '../models/player.js';
+import { TournamentRepository } from '../data-access/tournament-repository.js';
 
 /**
  * Configuration manager for bracket generation
@@ -22,14 +22,12 @@ class BracketConfig {
   static fromFile(filePath) {
     try {
       const fullPath = resolve(filePath);
-      const content = readFileSync(fullPath, "utf8");
+      const content = readFileSync(fullPath, 'utf8');
       const data = JSON.parse(content);
 
       return new BracketConfig(data.options, data.players);
     } catch (error) {
-      throw new Error(
-        `Failed to load bracket configuration from ${filePath}: ${error.message}`
-      );
+      throw new Error(`Failed to load bracket configuration from ${filePath}: ${error.message}`);
     }
   }
 
@@ -38,7 +36,7 @@ class BracketConfig {
    * @returns {string} Sheet name
    */
   getSheetName() {
-    return this.options?.sheetName || "Tournament Bracket";
+    return this.options?.sheetName || 'Tournament Bracket';
   }
 
   /**
@@ -50,13 +48,13 @@ class BracketConfig {
     // If bracketType is specified, get bracket-specific bestOf
     if (bracketType) {
       const bracketConfig = this.getBracketConfigByType(bracketType);
-      const bestOf = bracketConfig?.bestOf || this.options?.bestOf || "5";
+      const bestOf = bracketConfig?.bestOf || this.options?.bestOf || '5';
       return parseInt(bestOf);
     }
 
     // Otherwise use current bracket or global fallback
     const bracketConfig = this.getBracketConfig();
-    const bestOf = bracketConfig?.bestOf || this.options?.bestOf || "5";
+    const bestOf = bracketConfig?.bestOf || this.options?.bestOf || '5';
     return parseInt(bestOf);
   }
 
@@ -82,7 +80,7 @@ class BracketConfig {
    * @param {string} bracketType - 'gold' or 'silver'
    * @returns {Object} Bracket configuration
    */
-  getBracketConfigByType(bracketType = "gold") {
+  getBracketConfigByType(bracketType = 'gold') {
     return this.options?.[bracketType] || {};
   }
 
@@ -92,8 +90,8 @@ class BracketConfig {
    */
   getAvailableBracketTypes() {
     const types = [];
-    if (this.options?.gold) types.push("gold");
-    if (this.options?.silver) types.push("silver");
+    if (this.options?.gold) types.push('gold');
+    if (this.options?.silver) types.push('silver');
     return types;
   }
 
@@ -119,7 +117,7 @@ class BracketConfig {
    * @param {string} bracketType - 'gold' or 'silver'
    * @returns {number} Number of players to include
    */
-  getBracketSizeByType(bracketType = "gold") {
+  getBracketSizeByType(bracketType = 'gold') {
     const bracketConfig = this.getBracketConfigByType(bracketType);
     const bracketSize = bracketConfig.bracketSize;
     return parseInt(bracketSize, 10) || 8;
@@ -130,7 +128,7 @@ class BracketConfig {
    * @param {string} bracketType - 'gold' or 'silver'
    * @returns {string} Bracket name
    */
-  getBracketNameByType(bracketType = "gold") {
+  getBracketNameByType(bracketType = 'gold') {
     const bracketConfig = this.getBracketConfigByType(bracketType);
     return (
       bracketConfig.bracketName ||
@@ -143,9 +141,9 @@ class BracketConfig {
    * @param {string} bracketType - 'gold' or 'silver'
    * @returns {string} Bracket type
    */
-  getBracketTypeByCategory(bracketType = "gold") {
+  getBracketTypeByCategory(bracketType = 'gold') {
     const bracketConfig = this.getBracketConfigByType(bracketType);
-    return bracketConfig.bracketType || "standard";
+    return bracketConfig.bracketType || 'standard';
   }
 
   /**
@@ -153,7 +151,7 @@ class BracketConfig {
    * @param {string} bracketType - 'gold' or 'silver'
    * @returns {string} Color scheme (preset name or hex color)
    */
-  getColorSchemeByCategory(bracketType = "gold") {
+  getColorSchemeByCategory(bracketType = 'gold') {
     const bracketConfig = this.getBracketConfigByType(bracketType);
     return bracketConfig.colorScheme || bracketType; // Default to bracket type as color scheme
   }
@@ -172,7 +170,7 @@ class BracketConfig {
    * @returns {string} Bracket name
    */
   getBracketName() {
-    return this.getBracketConfig().bracketName || "Bracket";
+    return this.getBracketConfig().bracketName || 'Bracket';
   }
 
   /**
@@ -180,7 +178,7 @@ class BracketConfig {
    * @returns {string} Bracket type
    */
   getBracketType() {
-    return this.getBracketConfig().bracketType || "standard";
+    return this.getBracketConfig().bracketType || 'standard';
   }
 
   /**
@@ -193,9 +191,7 @@ class BracketConfig {
     const rawPlayers = this.players.slice(0, bracketSize);
 
     if (asDomainObjects) {
-      return rawPlayers.map((player, index) =>
-        Player.fromJson(player, index + 1, "gold")
-      );
+      return rawPlayers.map((player, index) => Player.fromJson(player, index + 1, 'gold'));
     }
 
     return rawPlayers.map((player, index) => ({
@@ -211,26 +207,21 @@ class BracketConfig {
    * @param {boolean} asDomainObjects - Whether to return Player domain objects
    * @returns {Array} Array of player objects for the specified bracket
    */
-  getPlayersByType(bracketType = "gold", asDomainObjects = false) {
-    if (bracketType === "gold") {
+  getPlayersByType(bracketType = 'gold', asDomainObjects = false) {
+    if (bracketType === 'gold') {
       return this.getPlayers(asDomainObjects); // Use existing logic for gold bracket
     }
 
-    if (bracketType === "silver") {
-      const goldBracketSize = this.getBracketSizeByType("gold");
-      const silverBracketSize = this.getBracketSizeByType("silver");
+    if (bracketType === 'silver') {
+      const goldBracketSize = this.getBracketSizeByType('gold');
+      const silverBracketSize = this.getBracketSizeByType('silver');
 
       // Silver bracket gets players after the gold bracket allocation
       const startIndex = goldBracketSize;
-      const silverPlayers = this.players.slice(
-        startIndex,
-        startIndex + silverBracketSize
-      );
+      const silverPlayers = this.players.slice(startIndex, startIndex + silverBracketSize);
 
       if (asDomainObjects) {
-        return silverPlayers.map((player, index) =>
-          Player.fromJson(player, index + 1, "silver")
-        );
+        return silverPlayers.map((player, index) => Player.fromJson(player, index + 1, 'silver'));
       }
 
       return silverPlayers.map((player, index) => ({
@@ -274,23 +265,21 @@ class BracketConfig {
     const errors = [];
 
     if (!this.options) {
-      errors.push("Missing options configuration");
+      errors.push('Missing options configuration');
     }
 
     if (!this.players || !Array.isArray(this.players)) {
-      errors.push("Missing or invalid players array");
+      errors.push('Missing or invalid players array');
     }
 
     if (this.players && this.players.length === 0) {
-      errors.push("No players configured");
+      errors.push('No players configured');
     }
 
     // Validate each bracket type
     const bracketTypes = this.getAvailableBracketTypes();
     if (bracketTypes.length === 0) {
-      errors.push(
-        "No bracket configurations found (need at least 'gold' bracket)"
-      );
+      errors.push("No bracket configurations found (need at least 'gold' bracket)");
     }
 
     bracketTypes.forEach((bracketType) => {
@@ -311,15 +300,13 @@ class BracketConfig {
     // Warn about unused players
     if (this.players && this.players.length > totalPlayersUsed) {
       const unused = this.players.length - totalPlayersUsed;
-      console.warn(
-        `Warning: ${unused} players will not be included in any bracket`
-      );
+      console.warn(`Warning: ${unused} players will not be included in any bracket`);
     }
 
     // Check for players without names
     if (this.players) {
       this.players.forEach((player, index) => {
-        if (!player.name || player.name.trim() === "") {
+        if (!player.name || player.name.trim() === '') {
           errors.push(`Player at index ${index} is missing a name`);
         }
       });
@@ -342,10 +329,7 @@ class BracketConfig {
         bracketName: this.getBracketNameByType(type),
         bracketType: this.getBracketTypeByCategory(type),
         bracketSize: this.getBracketSizeByType(type),
-        actualBracketSize: Math.pow(
-          2,
-          Math.ceil(Math.log2(this.getBracketSizeByType(type)))
-        ),
+        actualBracketSize: Math.pow(2, Math.ceil(Math.log2(this.getBracketSizeByType(type)))),
         playerCount: players.length,
       };
     });
@@ -372,9 +356,7 @@ class BracketConfig {
   createRepository() {
     // For now, create a repository that wraps this BracketConfig's data
     // In the future, this could be enhanced to create different repository types
-    return TournamentRepository.fromFile(
-      this.configPath || "./bracket-data.json"
-    );
+    return TournamentRepository.fromFile(this.configPath || './bracket-data.json');
   }
 
   /**

@@ -28,7 +28,7 @@ function generateTournamentSeeding(size) {
  * - A match winner placeholder (empty until filled)
  */
 class BracketPosition {
-  constructor(roundIndex, positionIndex, type = "empty") {
+  constructor(roundIndex, positionIndex, type = 'empty') {
     this.roundIndex = roundIndex;
     this.positionIndex = positionIndex + 1; // 1-indexed
     this.type = type; // 'seeded', 'bye', 'winner', 'empty'
@@ -38,28 +38,28 @@ class BracketPosition {
   }
 
   setSeededPlayer(seed, name) {
-    this.type = "seeded";
+    this.type = 'seeded';
     this.seed = seed;
     this.name = name;
     this.visible = true;
   }
 
   setBye(seed, name) {
-    this.type = "bye";
+    this.type = 'bye';
     this.seed = seed;
     this.name = name;
     this.visible = false; // Reserved but invisible
   }
 
   setWinnerPlaceholder() {
-    this.type = "winner";
+    this.type = 'winner';
     this.seed = null;
     this.name = null;
     this.visible = true;
   }
 
   setChampion(seed, name) {
-    this.type = "champion";
+    this.type = 'champion';
     this.seed = seed;
     this.name = name;
     this.visible = true;
@@ -162,8 +162,8 @@ class CompleteBracket {
         const rightPos = prevRound[p * 2 + 1];
 
         // Determine what goes in this position
-        const leftIsBye = leftPos.type === "bye";
-        const rightIsBye = rightPos.type === "bye";
+        const leftIsBye = leftPos.type === 'bye';
+        const rightIsBye = rightPos.type === 'bye';
 
         if (leftIsBye && rightIsBye) {
           // Check if either bye represents a top seed entering the bracket
@@ -185,7 +185,7 @@ class CompleteBracket {
             // Left bye is actually a top seed - they should win this "match"
             const player = this.players[leftPos.seed - 1];
             position.setSeededPlayer(leftPos.seed, player.name);
-          } else if (rightPos.type === "seeded") {
+          } else if (rightPos.type === 'seeded') {
             // Right player advances (left is empty bye)
             position.setSeededPlayer(rightPos.seed, rightPos.name);
           } else {
@@ -197,7 +197,7 @@ class CompleteBracket {
             // Right bye is actually a top seed - they should win this "match"
             const player = this.players[rightPos.seed - 1];
             position.setSeededPlayer(rightPos.seed, player.name);
-          } else if (leftPos.type === "seeded") {
+          } else if (leftPos.type === 'seeded') {
             // Left player advances (right is empty bye)
             position.setSeededPlayer(leftPos.seed, leftPos.name);
           } else {
@@ -213,7 +213,6 @@ class CompleteBracket {
 
   fillChampionRound() {
     const championRound = this.rounds[this.rounds.length - 1];
-    const finalRound = this.rounds[this.rounds.length - 2];
 
     // Champion is winner of finals
     championRound[0].setChampion(null, null); // Will be filled by finals winner
@@ -237,8 +236,7 @@ class CompleteBracket {
         position2: pos2,
         visible: pos1.visible || (pos2 && pos2.visible),
         // For round 1, determine if this is a real match or bye
-        isRealMatch:
-          roundIndex === 0 ? pos1.visible && pos2 && pos2.visible : true,
+        isRealMatch: roundIndex === 0 ? pos1.visible && pos2 && pos2.visible : true,
       };
 
       matches.push(match);
@@ -284,9 +282,7 @@ class CompleteBracket {
 
     this.rounds.forEach((round, roundIndex) => {
       const roundName =
-        roundIndex === this.rounds.length - 1
-          ? "Champion"
-          : `Round ${roundIndex + 1}`;
+        roundIndex === this.rounds.length - 1 ? 'Champion' : `Round ${roundIndex + 1}`;
       structure[roundName] = round.map((pos) => ({
         position: pos.positionIndex,
         type: pos.type,

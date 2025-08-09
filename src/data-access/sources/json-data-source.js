@@ -2,7 +2,6 @@ import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { DataSource } from '../interfaces/data-source.js';
 import { Player } from '../../models/player.js';
-import { Match } from '../../models/match.js';
 
 /**
  * JSON File Data Source Implementation
@@ -24,7 +23,7 @@ class JsonDataSource extends DataSource {
       if (!existsSync(this.configPath)) {
         throw new Error(`Configuration file not found: ${this.configPath}`);
       }
-      
+
       const content = readFileSync(this.configPath, 'utf8');
       this._cachedData = JSON.parse(content);
     }
@@ -39,7 +38,7 @@ class JsonDataSource extends DataSource {
   async getPlayers(options = {}) {
     const data = this._loadData();
     const { bracketType = null, asDomainObjects = true } = options;
-    
+
     if (!data.players || !Array.isArray(data.players)) {
       return [];
     }
@@ -48,21 +47,21 @@ class JsonDataSource extends DataSource {
     if (!bracketType) {
       const allPlayers = [];
       const availableBracketTypes = [];
-      
+
       // Determine available bracket types from options
       if (data.options?.gold) availableBracketTypes.push('gold');
       if (data.options?.silver) availableBracketTypes.push('silver');
-      
+
       // If no bracket config, default to gold
       if (availableBracketTypes.length === 0) {
         availableBracketTypes.push('gold');
       }
-      
+
       for (const currentBracketType of availableBracketTypes) {
         const players = await this.getPlayers({ bracketType: currentBracketType, asDomainObjects });
         allPlayers.push(...players);
       }
-      
+
       return allPlayers;
     }
 
@@ -74,12 +73,12 @@ class JsonDataSource extends DataSource {
 
     const bracketSize = bracketConfig.bracketSize || 8;
     let startIndex = 0;
-    
+
     // Calculate start index for silver bracket
     if (bracketType === 'silver') {
       startIndex = data.options?.gold?.bracketSize || 0;
     }
-    
+
     const players = data.players.slice(startIndex, startIndex + bracketSize);
 
     // Convert to domain objects if requested
@@ -96,11 +95,9 @@ class JsonDataSource extends DataSource {
   /**
    * Get matches from JSON data (currently returns empty - for future expansion)
    * @param {Object} options - Query options
-   * @returns {Promise<Match[]>} Array of Match domain objects
+   * @returns {Promise<[]>} Array of match-like objects
    */
   async getMatches(options = {}) {
-    // For now, JSON files don't contain match data
-    // This will be used when we add match tracking features
     return [];
   }
 
@@ -114,27 +111,27 @@ class JsonDataSource extends DataSource {
     return {
       sheetName: data.options?.sheetName || 'Tournament Bracket',
       brackets: data.options || {},
-      players: data.players || []
+      players: data.players || [],
     };
   }
 
   /**
    * Save players (not implemented for JSON - read-only for now)
-   * @param {Player[]} players - Array of Player domain objects
+   * @param {Array} players - Array of Player-like objects
    * @param {Object} options - Save options
    * @returns {Promise<void>}
    */
-  async savePlayers(players, options = {}) {
+  async savePlayers(/* players, options = {} */) {
     throw new Error('JsonDataSource is read-only. Cannot save players.');
   }
 
   /**
    * Save matches (not implemented for JSON - read-only for now)
-   * @param {Match[]} matches - Array of Match domain objects
+   * @param {Array} matches - Array of match-like objects
    * @param {Object} options - Save options
    * @returns {Promise<void>}
    */
-  async saveMatches(matches, options = {}) {
+  async saveMatches(/* matches, options = {} */) {
     throw new Error('JsonDataSource is read-only. Cannot save matches.');
   }
 

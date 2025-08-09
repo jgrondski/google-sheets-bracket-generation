@@ -12,9 +12,6 @@ class FormulaBuilder {
    * @returns {string} VLOOKUP formula
    */
   static playerLookup(sheetName, seedCell, nameColumn = 'C', seedColumn = 'B') {
-    const lookupRange = `'${sheetName}'!${seedColumn}:${nameColumn}`;
-    const columnIndex = nameColumn.charCodeAt(0) - seedColumn.charCodeAt(0) + 1;
-    
     return `=IFERROR(INDEX('${sheetName}'!${nameColumn}:${nameColumn},MATCH(${seedCell},'${sheetName}'!${seedColumn}:${seedColumn},0)),"TBD")`;
   }
 
@@ -32,7 +29,7 @@ class FormulaBuilder {
 
   /**
    * Generate formula for loser bracket advancement
-   * @param {string} matchCell1 - First player cell reference  
+   * @param {string} matchCell1 - First player cell reference
    * @param {string} matchCell2 - Second player cell reference
    * @param {string} scoreCell1 - First player score cell
    * @param {string} scoreCell2 - Second player score cell
@@ -107,9 +104,9 @@ class FormulaBuilder {
    * @returns {string} Round name formula or static text
    */
   static roundNameFormula(roundNumber, totalRounds) {
-    if (roundNumber === totalRounds) return "Finals";
-    if (roundNumber === totalRounds - 1) return "Semifinals";
-    if (roundNumber === totalRounds - 2) return "Quarterfinals";
+    if (roundNumber === totalRounds) return 'Finals';
+    if (roundNumber === totalRounds - 1) return 'Semifinals';
+    if (roundNumber === totalRounds - 2) return 'Quarterfinals';
     return `Round ${roundNumber}`;
   }
 
@@ -146,7 +143,7 @@ class FormulaBuilder {
   static cellReference(row, column, absoluteRow = false, absoluteColumn = false) {
     const columnLetter = String.fromCharCode(65 + column);
     const rowNumber = row + 1;
-    
+
     return `${absoluteColumn ? '$' : ''}${columnLetter}${absoluteRow ? '$' : ''}${rowNumber}`;
   }
 }

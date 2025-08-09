@@ -1,15 +1,15 @@
 // ==================== src/commands/build-bracket-command.js ====================
 
-import { BracketConfig } from "../config/bracket-config.js";
-import { Tournament } from "../core/tournament.js";
-import { MultiBracketTournament } from "../core/multi-bracket-tournament.js";
-import _default from "../core/bracket-layout.js";
+import { BracketConfig } from '../config/bracket-config.js';
+import { Tournament } from '../core/tournament.js';
+import { MultiBracketTournament } from '../core/multi-bracket-tournament.js';
+import _default from '../core/bracket-layout.js';
 const { BracketLayout } = _default;
-import { SpreadsheetCreator } from "../services/spreadsheet-creator.js";
-import { BracketRenderer } from "../services/bracket-renderer.js";
-import { QualsSheetCreator } from "../services/quals-sheet-creator.js";
-import { MatchSheetCreator } from "../services/match-sheet-creator.js";
-import __default from "./command-validator.js";
+import { SpreadsheetCreator } from '../services/spreadsheet-creator.js';
+import { BracketRenderer } from '../services/bracket-renderer.js';
+import { QualsSheetCreator } from '../services/quals-sheet-creator.js';
+import { MatchSheetCreator } from '../services/match-sheet-creator.js';
+import __default from './command-validator.js';
 const { CommandValidator } = __default;
 
 /**
@@ -25,9 +25,9 @@ class BuildBracketCommand {
    * @param {string} configPath - Path to configuration file
    * @returns {Promise<Object>} Result information
    */
-  async execute(configPath = "./bracket-data.json") {
+  async execute(configPath = './bracket-data.json') {
     try {
-      console.log("🏆 Starting bracket generation...");
+      console.log('🏆 Starting bracket generation...');
 
       // Validate inputs
       const validationResults = {
@@ -37,29 +37,25 @@ class BuildBracketCommand {
 
       const report = CommandValidator.createValidationReport(validationResults);
       if (!report.valid) {
-        throw new Error(`Validation failed: ${report.errors.join(", ")}`);
+        throw new Error(`Validation failed: ${report.errors.join(', ')}`);
       }
 
       // 1. Load and validate configuration
       const config = BracketConfig.fromFile(configPath);
       const configErrors = config.validate();
       if (configErrors.length > 0) {
-        throw new Error(`Configuration errors: ${configErrors.join(", ")}`);
+        throw new Error(`Configuration errors: ${configErrors.join(', ')}`);
       }
 
-      console.log("✅ Configuration loaded and validated");
-      console.log("📊 Config summary:", config.getSummary());
+      console.log('✅ Configuration loaded and validated');
+      console.log('📊 Config summary:', config.getSummary());
 
       // 2. Determine if we have multiple brackets
       const bracketTypes = config.getAvailableBracketTypes();
       const isMultiBracket = bracketTypes.length > 1;
 
-      console.log(
-        `🏆 Tournament type: ${
-          isMultiBracket ? "Multi-bracket" : "Single bracket"
-        }`
-      );
-      console.log(`📋 Brackets: ${bracketTypes.join(", ")}`);
+      console.log(`🏆 Tournament type: ${isMultiBracket ? 'Multi-bracket' : 'Single bracket'}`);
+      console.log(`📋 Brackets: ${bracketTypes.join(', ')}`);
 
       // 3. Create appropriate tournament model
       let tournament;
@@ -71,11 +67,11 @@ class BuildBracketCommand {
 
       const tournamentErrors = tournament.validate();
       if (tournamentErrors.length > 0) {
-        throw new Error(`Tournament errors: ${tournamentErrors.join(", ")}`);
+        throw new Error(`Tournament errors: ${tournamentErrors.join(', ')}`);
       }
 
-      console.log("✅ Tournament created");
-      console.log("🎯 Tournament summary:", tournament.getSummary());
+      console.log('✅ Tournament created');
+      console.log('🎯 Tournament summary:', tournament.getSummary());
 
       // 4. Create spreadsheet
       const targetFolderId = process.env.TARGET_FOLDER_ID || null;
@@ -90,26 +86,21 @@ class BuildBracketCommand {
 
       // 5. Create combined Quals sheet
       const qualsSheetCreator = new QualsSheetCreator(this.auth);
-      await qualsSheetCreator.create(
-        spreadsheet.spreadsheetId,
-        tournament,
-        config
-      );
+      await qualsSheetCreator.create(spreadsheet.spreadsheetId, tournament, config);
       console.log(`✅ Combined Qualifiers sheet created`);
 
       // 6. Create match tracking sheets
       const matchSheetCreator = new MatchSheetCreator(this.auth);
-      let matchSheets;
 
       if (isMultiBracket) {
-        matchSheets = await matchSheetCreator.createMultiBracketMatchSheets(
+        await matchSheetCreator.createMultiBracketMatchSheets(
           spreadsheet.spreadsheetId,
           tournament,
           config
         );
         console.log(`✅ Match tracking sheets created for all brackets`);
       } else {
-        matchSheets = await matchSheetCreator.createSingleBracketMatchSheet(
+        await matchSheetCreator.createSingleBracketMatchSheet(
           spreadsheet.spreadsheetId,
           tournament,
           config
@@ -123,35 +114,35 @@ class BuildBracketCommand {
       } else {
         // Generate bracket layout for single bracket
         const layout = new BracketLayout(tournament);
-        console.log("✅ Bracket layout calculated");
+        console.log('✅ Bracket layout calculated');
 
         // Render bracket to spreadsheet
         const renderer = new BracketRenderer(this.auth);
-        const colorScheme = config.getColorSchemeByCategory("gold");
+        const colorScheme = config.getColorSchemeByCategory('gold');
         await renderer.renderBracketOnSheet(
           spreadsheet.spreadsheetId,
           layout,
           0,
           colorScheme,
           config,
-          "gold"
+          'gold'
         );
       }
 
-      console.log("✅ Bracket generation complete!");
+      console.log('✅ Bracket generation complete!');
 
       return {
         success: true,
         spreadsheet,
         tournament: tournament.getSummary(),
-        message: "Bracket generated successfully",
+        message: 'Bracket generated successfully',
       };
     } catch (error) {
-      console.error("❌ Error building bracket:", error.message);
+      console.error('❌ Error building bracket:', error.message);
       return {
         success: false,
         error: error.message,
-        message: "Failed to generate bracket",
+        message: 'Failed to generate bracket',
       };
     }
   }
@@ -162,17 +153,11 @@ class BuildBracketCommand {
    * @param {MultiBracketTournament} multiBracketTournament - The multi-bracket tournament
    * @param {BracketConfig} config - The bracket configuration
    */
-  async renderMultiSheetTournament(
-    spreadsheet,
-    multiBracketTournament,
-    config
-  ) {
+  async renderMultiSheetTournament(spreadsheet, multiBracketTournament, config) {
     const renderer = new BracketRenderer(this.auth);
     const bracketTypes = multiBracketTournament.getBracketTypes();
 
-    console.log(
-      `📐 Rendering ${bracketTypes.length} brackets to separate sheets...`
-    );
+    console.log(`📐 Rendering ${bracketTypes.length} brackets to separate sheets...`);
 
     for (const bracketType of bracketTypes) {
       console.log(`🎨 Rendering ${bracketType} bracket...`);
@@ -193,12 +178,10 @@ class BuildBracketCommand {
         bracketType
       );
 
-      console.log(
-        `✅ ${bracketType} bracket rendered to sheet: ${sheetInfo.sheetName}`
-      );
+      console.log(`✅ ${bracketType} bracket rendered to sheet: ${sheetInfo.sheetName}`);
     }
 
-    console.log("✅ All brackets rendered to separate sheets successfully");
+    console.log('✅ All brackets rendered to separate sheets successfully');
   }
 
   /**

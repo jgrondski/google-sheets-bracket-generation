@@ -21,7 +21,6 @@ Automatically generate tournament brackets in Google Sheets with player seeding,
    ```
 
 2. **Get Google API credentials** - [Detailed Google setup guide](#google-api-setup)
-
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
    - Enable Google Sheets API + Google Drive API
    - Create OAuth credentials → Download → Rename to `oauth-credentials.json`
@@ -187,7 +186,7 @@ TOKEN_PATH=./token.json
   - Default: `./oauth-credentials.json` (project root)
   - Only change if you want to store credentials elsewhere
 
-- **`TOKEN_PATH`** (optional) - Path to your authentication token file  
+- **`TOKEN_PATH`** (optional) - Path to your authentication token file
   - Default: `./token.json` (project root)
   - Only change if you want to store the token elsewhere
 

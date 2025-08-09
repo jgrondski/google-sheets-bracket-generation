@@ -1,7 +1,7 @@
 // ==================== src/factories/bracket-factory.js ====================
 
-import { Tournament } from "../core/tournament.js";
-import bracketConfig from "../config/bracket-config.js";
+import { Tournament } from '../core/tournament.js';
+import bracketConfig from '../config/bracket-config.js';
 const { BracketConfig } = bracketConfig;
 
 /**
@@ -36,19 +36,18 @@ class BracketFactory {
    */
   static fromPlayerList(players, options = {}) {
     const playerObjects = players.map((player, index) => ({
-      name: typeof player === "string" ? player : player.name,
+      name: typeof player === 'string' ? player : player.name,
       seed: index + 1,
       ...player,
     }));
 
     const config = new BracketConfig(
       {
-        sheetName: options.sheetName || "Tournament Bracket",
+        sheetName: options.sheetName || 'Tournament Bracket',
         gold: {
-          bracketSize:
-            options.bracketSize || this.calculateBracketSize(players.length),
-          bracketType: options.bracketType || "standard",
-          bracketName: options.bracketName || "Bracket",
+          bracketSize: options.bracketSize || this.calculateBracketSize(players.length),
+          bracketType: options.bracketType || 'standard',
+          bracketName: options.bracketName || 'Bracket',
         },
       },
       playerObjects
@@ -69,8 +68,8 @@ class BracketFactory {
     }));
 
     return this.fromPlayerList(players, {
-      sheetName: "Test Tournament",
-      bracketName: "Test Bracket",
+      sheetName: 'Test Tournament',
+      bracketName: 'Test Bracket',
     });
   }
 
@@ -93,27 +92,27 @@ class BracketFactory {
     const errors = [];
 
     if (!players || !Array.isArray(players)) {
-      errors.push("Players must be provided as an array");
+      errors.push('Players must be provided as an array');
       return errors;
     }
 
     if (players.length < 2) {
-      errors.push("At least 2 players are required");
+      errors.push('At least 2 players are required');
     }
 
     if (options.bracketSize && options.bracketSize < players.length) {
-      errors.push("Bracket size cannot be smaller than player count");
+      errors.push('Bracket size cannot be smaller than player count');
     }
 
     // Check for duplicate names
-    const names = players.map((p) => (typeof p === "string" ? p : p.name));
+    const names = players.map((p) => (typeof p === 'string' ? p : p.name));
     const uniqueNames = new Set(names);
     if (uniqueNames.size !== names.length) {
-      errors.push("Duplicate player names found");
+      errors.push('Duplicate player names found');
     }
 
     // Check for empty names
-    const emptyNames = names.filter((name) => !name || name.trim() === "");
+    const emptyNames = names.filter((name) => !name || name.trim() === '');
     if (emptyNames.length > 0) {
       errors.push(`${emptyNames.length} players have empty names`);
     }
@@ -126,7 +125,7 @@ class BracketFactory {
    * @returns {Array} Array of supported tournament types
    */
   static getSupportedTypes() {
-    return ["standard", "single-elimination"]; // Could expand in future
+    return ['standard', 'single-elimination']; // Could expand in future
   }
 
   /**

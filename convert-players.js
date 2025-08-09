@@ -5,32 +5,30 @@
  * Usage: node convert-players.js
  */
 
-import { readFileSync, writeFileSync } from "fs";
-import { createInterface } from "readline";
+import { writeFileSync } from 'fs';
+import { createInterface } from 'readline';
 
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-console.log("🏆 Player List Converter");
-console.log("");
-console.log(
-  "Paste your player names (one per line) and press Enter twice when done:"
-);
-console.log("Example:");
-console.log("  John Smith");
-console.log("  Jane Doe");
-console.log("  Bob Wilson");
-console.log("");
+console.log('🏆 Player List Converter');
+console.log('');
+console.log('Paste your player names (one per line) and press Enter twice when done:');
+console.log('Example:');
+console.log('  John Smith');
+console.log('  Jane Doe');
+console.log('  Bob Wilson');
+console.log('');
 
 let playerNames = [];
 let emptyLineCount = 0;
 
-rl.on("line", (line) => {
+rl.on('line', (line) => {
   const trimmed = line.trim();
 
-  if (trimmed === "") {
+  if (trimmed === '') {
     emptyLineCount++;
     if (emptyLineCount >= 2) {
       rl.close();
@@ -41,9 +39,9 @@ rl.on("line", (line) => {
   }
 });
 
-rl.on("close", () => {
+rl.on('close', () => {
   if (playerNames.length === 0) {
-    console.log("❌ No players entered. Exiting.");
+    console.log('❌ No players entered. Exiting.');
     process.exit(1);
   }
 
@@ -55,19 +53,19 @@ rl.on("close", () => {
   // Create basic bracket configuration
   const bracketData = {
     options: {
-      sheetName: "My Tournament 2025",
+      sheetName: 'My Tournament 2025',
       gold: {
         bracketSize: playerNames.length.toString(),
-        bracketType: "standard",
-        bracketName: "Main Bracket",
-        bestOf: "5",
+        bracketType: 'standard',
+        bracketName: 'Main Bracket',
+        bestOf: '5',
       },
     },
     players,
   };
 
   // Write to file
-  const filename = "bracket-data.json";
+  const filename = 'bracket-data.json';
   const jsonString = JSON.stringify(bracketData, null, 2)
     // Format players array with one player per line
     .replace(/{\s*"name":\s*"([^"]+)"\s*}/g, '{ "name": "$1" }');
@@ -75,7 +73,7 @@ rl.on("close", () => {
   writeFileSync(filename, jsonString);
 
   console.log(`\n🎉 Created ${filename} with ${playerNames.length} players!`);
-  console.log("\nNext steps:");
-  console.log("1. Edit bracket-data.json to adjust tournament settings");
-  console.log("2. Run: npm start");
+  console.log('\nNext steps:');
+  console.log('1. Edit bracket-data.json to adjust tournament settings');
+  console.log('2. Run: npm start');
 });

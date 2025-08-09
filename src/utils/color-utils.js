@@ -8,9 +8,9 @@
  * Default color schemes
  */
 const DEFAULT_COLOR_SCHEMES = {
-  gold: "#FFDA75", // Original gold color
-  silver: "#D9D9D9", // Original silver color
-  bronze: "#CD7F32", // Bronze for future use
+  gold: '#FFDA75', // Original gold color
+  silver: '#D9D9D9', // Original silver color
+  bronze: '#CD7F32', // Bronze for future use
 };
 
 /**
@@ -29,7 +29,7 @@ const FIXED_COLORS = {
  */
 function hexToRgb(hex) {
   // Remove # if present
-  hex = hex.replace("#", "");
+  hex = hex.replace('#', '');
 
   // Parse hex values
   const r = parseInt(hex.substr(0, 2), 16) / 255;
@@ -82,7 +82,7 @@ function getContrastColor(backgroundColor) {
  */
 function resolveColorScheme(colorScheme) {
   // If it's a hex color (starts with #), return as-is
-  if (colorScheme.startsWith("#")) {
+  if (colorScheme.startsWith('#')) {
     return colorScheme;
   }
 

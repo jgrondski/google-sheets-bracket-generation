@@ -1,6 +1,6 @@
 // ==================== src/services/spreadsheet-creator.js ====================
 
-import { GoogleSheetsService } from "./google-sheets-service.js";
+import { GoogleSheetsService } from './google-sheets-service.js';
 
 /**
  * Service for creating and setting up spreadsheets for brackets
@@ -19,10 +19,7 @@ class SpreadsheetCreator {
   async createTournamentSpreadsheet(config) {
     const title = config.getSheetName();
 
-    const spreadsheetId = await this.sheetsService.createSpreadsheet(
-      title,
-      this.targetFolderId
-    );
+    const spreadsheetId = await this.sheetsService.createSpreadsheet(title, this.targetFolderId);
 
     // Calculate required dimensions
     const columnCount = 24; // Standard bracket column count
@@ -48,10 +45,7 @@ class SpreadsheetCreator {
     const title = config.getSheetName();
     const bracketTypes = config.getAvailableBracketTypes();
 
-    const spreadsheetId = await this.sheetsService.createSpreadsheet(
-      title,
-      this.targetFolderId
-    );
+    const spreadsheetId = await this.sheetsService.createSpreadsheet(title, this.targetFolderId);
 
     const sheets = {};
 
@@ -69,12 +63,7 @@ class SpreadsheetCreator {
         await this.sheetsService.renameSheet(spreadsheetId, 0, bracketName);
 
         // Resize the default sheet to required dimensions
-        await this.sheetsService.resizeSheet(
-          spreadsheetId,
-          0,
-          requiredRows,
-          requiredCols
-        );
+        await this.sheetsService.resizeSheet(spreadsheetId, 0, requiredRows, requiredCols);
 
         sheets[bracketType] = {
           sheetId: 0,
@@ -94,9 +83,7 @@ class SpreadsheetCreator {
         };
       }
 
-      console.log(
-        `✅ Sheet created: ${bracketName} (ID: ${sheets[bracketType].sheetId})`
-      );
+      console.log(`✅ Sheet created: ${bracketName} (ID: ${sheets[bracketType].sheetId})`);
     }
 
     const url = this.sheetsService.getSpreadsheetUrl(spreadsheetId);

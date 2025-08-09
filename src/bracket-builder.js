@@ -2,7 +2,7 @@
 // This file is maintained for backward compatibility
 // New development should use the modular architecture in src/commands/
 
-import buildBracketCommand from "./commands/build-bracket-command.js";
+import buildBracketCommand from './commands/build-bracket-command.js';
 const { buildBracket: newBuildBracket } = buildBracketCommand;
 
 /**

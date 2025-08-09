@@ -1,7 +1,7 @@
 // ==================== src/core/tournament.js ====================
 
-import { CompleteBracket } from "../complete-bracket.js";
-import bracketValidatorDefault from "./bracket-validator.js";
+import { CompleteBracket } from '../complete-bracket.js';
+import bracketValidatorDefault from './bracket-validator.js';
 const { BracketValidator } = bracketValidatorDefault;
 
 /**
@@ -78,9 +78,7 @@ class Tournament {
     errors.push(...configErrors);
 
     // Validate bracket structure
-    const bracketErrors = BracketValidator.validateBracketStructure(
-      this.bracket
-    );
+    const bracketErrors = BracketValidator.validateBracketStructure(this.bracket);
     errors.push(...bracketErrors);
 
     // Validate seeding
@@ -95,7 +93,7 @@ class Tournament {
    * @returns {string} Tournament type (e.g., 'single-elimination')
    */
   getType() {
-    return "single-elimination"; // For now, only support single elimination
+    return 'single-elimination'; // For now, only support single elimination
   }
 
   /**

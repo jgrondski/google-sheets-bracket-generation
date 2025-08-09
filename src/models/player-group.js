@@ -1,6 +1,6 @@
 // ==================== src/models/player-group.js ====================
 
-import { getCellFormats } from "../styles/styles.js";
+import { getCellFormats } from '../styles/styles.js';
 
 class PlayerGroup {
   constructor(rowStart, colStart, seed, name, score, conType) {
@@ -29,13 +29,7 @@ class PlayerGroup {
   }
 
   // Builds merge & data requests for this group
-  toRequests(
-    seedValue,
-    nameValue,
-    scoreValue,
-    sheetId = 0,
-    colorScheme = "gold"
-  ) {
+  toRequests(seedValue, nameValue, scoreValue, sheetId = 0, colorScheme = 'gold') {
     const requests = [];
     const CELL_FORMATS = getCellFormats(colorScheme);
 
@@ -50,15 +44,15 @@ class PlayerGroup {
             startColumnIndex: this.colStart + i,
             endColumnIndex: this.colStart + i + 1,
           },
-          mergeType: "MERGE_ALL",
+          mergeType: 'MERGE_ALL',
         },
       });
     }
 
     // Update values & formatting using provided value objects (can be stringValue, numberValue, or formulaValue)
-    const seedCell = { userEnteredValue: seedValue || { stringValue: "" } };
-    const nameCell = { userEnteredValue: nameValue || { stringValue: "" } };
-    const scoreCell = { userEnteredValue: scoreValue || { stringValue: "" } };
+    const seedCell = { userEnteredValue: seedValue || { stringValue: '' } };
+    const nameCell = { userEnteredValue: nameValue || { stringValue: '' } };
+    const scoreCell = { userEnteredValue: scoreValue || { stringValue: '' } };
 
     // Add formatting to each cell
     seedCell.userEnteredFormat = CELL_FORMATS.seed;
@@ -76,7 +70,7 @@ class PlayerGroup {
             values: [seedCell, nameCell, scoreCell],
           },
         ],
-        fields: "userEnteredValue,userEnteredFormat",
+        fields: 'userEnteredValue,userEnteredFormat',
       },
     });
 
@@ -84,23 +78,23 @@ class PlayerGroup {
   }
 
   // Builds requests for bye positions (just background cells)
-  toByeRequests(sheetId = 0, colorScheme = "gold") {
+  toByeRequests(sheetId = 0, colorScheme = 'gold') {
     const requests = [];
     const CELL_FORMATS = getCellFormats(colorScheme);
 
     // Create 3 empty cells with gray background (same as bracket background)
     const seedCell = {
-      userEnteredValue: { stringValue: "" },
+      userEnteredValue: { stringValue: '' },
       userEnteredFormat: CELL_FORMATS.bye,
     };
 
     const nameCell = {
-      userEnteredValue: { stringValue: "" },
+      userEnteredValue: { stringValue: '' },
       userEnteredFormat: CELL_FORMATS.bye,
     };
 
     const scoreCell = {
-      userEnteredValue: { stringValue: "" },
+      userEnteredValue: { stringValue: '' },
       userEnteredFormat: CELL_FORMATS.bye,
     };
 
@@ -116,7 +110,7 @@ class PlayerGroup {
             values: [seedCell, nameCell, scoreCell],
           },
         ],
-        fields: "userEnteredValue,userEnteredFormat",
+        fields: 'userEnteredValue,userEnteredFormat',
       },
     });
 

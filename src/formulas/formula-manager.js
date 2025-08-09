@@ -1,5 +1,3 @@
-import { FormulaBuilder } from './formula-builder.js';
-import { FormulaTemplates } from './formula-templates.js';
 import { GoogleSheetsService } from '../services/google-sheets-service.js';
 
 /**
@@ -22,7 +20,13 @@ class FormulaManager {
    * @param {Function} getPlayerCellRef - Function to get player cell references
    * @returns {Promise<Object>} Applied formula results
    */
-  async applySeedingFormulas(spreadsheetId, bracketSheet, qualifierSheet, bracketSize, getPlayerCellRef) {
+  async applySeedingFormulas(
+    spreadsheetId,
+    bracketSheet,
+    qualifierSheet,
+    bracketSize,
+    getPlayerCellRef
+  ) {
     const template = FormulaTemplates.singleEliminationSeeding(qualifierSheet, bracketSize);
     const requests = [];
 
@@ -37,34 +41,42 @@ class FormulaManager {
 
       requests.push({
         updateCells: {
-          start: { 
+          start: {
             sheetId: this._getSheetId(bracketSheet),
             rowIndex: player1Coords.row,
-            columnIndex: player1Coords.column
+            columnIndex: player1Coords.column,
           },
-          rows: [{
-            values: [{
-              userEnteredValue: { formulaValue: match.player1Formula }
-            }]
-          }],
-          fields: 'userEnteredValue.formulaValue'
-        }
+          rows: [
+            {
+              values: [
+                {
+                  userEnteredValue: { formulaValue: match.player1Formula },
+                },
+              ],
+            },
+          ],
+          fields: 'userEnteredValue.formulaValue',
+        },
       });
 
       requests.push({
         updateCells: {
-          start: { 
+          start: {
             sheetId: this._getSheetId(bracketSheet),
             rowIndex: player2Coords.row,
-            columnIndex: player2Coords.column
+            columnIndex: player2Coords.column,
           },
-          rows: [{
-            values: [{
-              userEnteredValue: { formulaValue: match.player2Formula }
-            }]
-          }],
-          fields: 'userEnteredValue.formulaValue'
-        }
+          rows: [
+            {
+              values: [
+                {
+                  userEnteredValue: { formulaValue: match.player2Formula },
+                },
+              ],
+            },
+          ],
+          fields: 'userEnteredValue.formulaValue',
+        },
       });
     });
 
@@ -77,13 +89,13 @@ class FormulaManager {
     return {
       success: true,
       formulasApplied: template.firstRound.length * 2,
-      template: template.type
+      template: template.type,
     };
   }
 
   /**
    * Apply winner advancement formulas between rounds
-   * @param {string} spreadsheetId - Target spreadsheet ID  
+   * @param {string} spreadsheetId - Target spreadsheet ID
    * @param {string} bracketSheet - Bracket sheet name
    * @param {number} round - Round number to populate
    * @param {Function} getCellRef - Function to get cell references
@@ -100,18 +112,22 @@ class FormulaManager {
 
       requests.push({
         updateCells: {
-          start: { 
+          start: {
             sheetId: this._getSheetId(bracketSheet),
             rowIndex: targetCoords.row,
-            columnIndex: targetCoords.column
+            columnIndex: targetCoords.column,
           },
-          rows: [{
-            values: [{
-              userEnteredValue: { formulaValue: match.winnerFormula }
-            }]
-          }],
-          fields: 'userEnteredValue.formulaValue'
-        }
+          rows: [
+            {
+              values: [
+                {
+                  userEnteredValue: { formulaValue: match.winnerFormula },
+                },
+              ],
+            },
+          ],
+          fields: 'userEnteredValue.formulaValue',
+        },
       });
     });
 
@@ -122,7 +138,7 @@ class FormulaManager {
       success: true,
       formulasApplied: template.matches.length,
       round,
-      template: template.type
+      template: template.type,
     };
   }
 
@@ -151,7 +167,7 @@ class FormulaManager {
     return {
       success: true,
       formulasApplied: template.matches.length,
-      template: template.type
+      template: template.type,
     };
   }
 
@@ -167,7 +183,7 @@ class FormulaManager {
       seeding: null,
       advancement: [],
       statistics: null,
-      navigation: null
+      navigation: null,
     };
 
     // Apply seeding formulas
@@ -195,7 +211,7 @@ class FormulaManager {
     return {
       success: true,
       results,
-      template: template.type
+      template: template.type,
     };
   }
 
@@ -224,13 +240,13 @@ class FormulaManager {
     const stats = {
       sheetsWithFormulas: this.appliedFormulas.size,
       totalFormulaSets: 0,
-      formulasByType: {}
+      formulasByType: {},
     };
 
     for (const [sheetName, formulas] of this.appliedFormulas) {
       stats.totalFormulaSets += formulas.length;
-      
-      formulas.forEach(formula => {
+
+      formulas.forEach((formula) => {
         const type = formula.template.type || 'unknown';
         stats.formulasByType[type] = (stats.formulasByType[type] || 0) + 1;
       });
@@ -261,7 +277,7 @@ class FormulaManager {
 
     return {
       row: rowNumber - 1, // Convert to 0-based
-      column: column
+      column: column,
     };
   }
 
@@ -290,7 +306,7 @@ class FormulaManager {
     this.appliedFormulas.get(sheetName).push({
       type: formulaType,
       template,
-      appliedAt: new Date().toISOString()
+      appliedAt: new Date().toISOString(),
     });
   }
 }

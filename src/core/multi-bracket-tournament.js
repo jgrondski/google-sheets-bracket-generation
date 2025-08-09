@@ -1,6 +1,6 @@
 // ==================== src/core/multi-bracket-tournament.js ====================
 
-import { Tournament } from "./tournament.js";
+import { Tournament } from './tournament.js';
 
 /**
  * Multi-bracket tournament that can handle gold, silver, and potentially more bracket types
@@ -21,10 +21,7 @@ class MultiBracketTournament {
     this.bracketTypes.forEach((bracketType) => {
       // Create a sub-config for this bracket type
       const players = this.config.getPlayersByType(bracketType);
-      const bracketConfig = this.createBracketSpecificConfig(
-        bracketType,
-        players
-      );
+      const bracketConfig = this.createBracketSpecificConfig(bracketType, players);
 
       // Create a tournament for this bracket
       this.brackets[bracketType] = new Tournament(bracketConfig);
@@ -95,9 +92,7 @@ class MultiBracketTournament {
       if (bracket) {
         const bracketErrors = bracket.validate();
         // Prefix errors with bracket type for clarity
-        const prefixedErrors = bracketErrors.map(
-          (error) => `${bracketType} bracket: ${error}`
-        );
+        const prefixedErrors = bracketErrors.map((error) => `${bracketType} bracket: ${error}`);
         errors.push(...prefixedErrors);
       }
     });
@@ -156,7 +151,7 @@ class MultiBracketTournament {
    * @returns {boolean} True if silver bracket is configured
    */
   hasSilverBracket() {
-    return this.bracketTypes.includes("silver");
+    return this.bracketTypes.includes('silver');
   }
 }
 

@@ -54,10 +54,9 @@ class DataSourceFactory {
   /**
    * Auto-detect and create appropriate data source
    * @param {string|Object} input - File path for JSON or config object
-   * @param {Object} fallbackOptions - Additional options for auto-detection
    * @returns {DataSource}
    */
-  static createAutoDetect(input, fallbackOptions = {}) {
+  static createAutoDetect(input) {
     if (typeof input === 'string') {
       // String input - assume it's a file path
       return DataSourceFactory.createJsonDataSource(input);
@@ -99,7 +98,9 @@ class DataSourceFactory {
     }
 
     if (!DataSourceFactory.getSupportedTypes().includes(type)) {
-      errors.push(`Unsupported data source type: ${type}. Supported types: ${DataSourceFactory.getSupportedTypes().join(', ')}`);
+      errors.push(
+        `Unsupported data source type: ${type}. Supported types: ${DataSourceFactory.getSupportedTypes().join(', ')}`
+      );
       return errors;
     }
 

@@ -14,22 +14,22 @@ class FormulaTemplates {
   static singleEliminationSeeding(qualifierSheet, bracketSize) {
     const firstRoundFormulas = [];
     const seedPairs = this._generateSeedPairs(bracketSize);
-    
+
     for (let i = 0; i < seedPairs.length; i++) {
       const [seed1, seed2] = seedPairs[i];
       firstRoundFormulas.push({
         matchIndex: i,
         player1Formula: FormulaBuilder.seedLookup(qualifierSheet, seed1),
         player2Formula: FormulaBuilder.seedLookup(qualifierSheet, seed2),
-        seeds: [seed1, seed2]
+        seeds: [seed1, seed2],
       });
     }
-    
+
     return {
       type: 'single-elimination-seeding',
       bracketSize,
       qualifierSheet,
-      firstRound: firstRoundFormulas
+      firstRound: firstRoundFormulas,
     };
   }
 
@@ -42,12 +42,12 @@ class FormulaTemplates {
    */
   static winnerAdvancement(round, matchesInRound, getCellRef) {
     const advancementFormulas = [];
-    
+
     for (let match = 0; match < matchesInRound; match++) {
       // Calculate source match indices from previous round
       const prevMatch1 = match * 2;
       const prevMatch2 = match * 2 + 1;
-      
+
       advancementFormulas.push({
         matchIndex: match,
         round: round,
@@ -57,14 +57,14 @@ class FormulaTemplates {
           getCellRef(prevMatch1, 'score1'),
           getCellRef(prevMatch1, 'score2')
         ),
-        sourceMatches: [prevMatch1, prevMatch2]
+        sourceMatches: [prevMatch1, prevMatch2],
       });
     }
-    
+
     return {
       type: 'winner-advancement',
       round,
-      matches: advancementFormulas
+      matches: advancementFormulas,
     };
   }
 
@@ -75,15 +75,12 @@ class FormulaTemplates {
    */
   static matchResultTracking(matches) {
     const trackingFormulas = [];
-    
+
     matches.forEach((match, index) => {
       trackingFormulas.push({
         matchIndex: index,
         matchId: match.id,
-        completionFormula: FormulaBuilder.matchCompleteFormula(
-          match.score1Cell,
-          match.score2Cell
-        ),
+        completionFormula: FormulaBuilder.matchCompleteFormula(match.score1Cell, match.score2Cell),
         winnerFormula: FormulaBuilder.winnerFormula(
           match.player1Cell,
           match.player2Cell,
@@ -94,14 +91,14 @@ class FormulaTemplates {
           player1: match.player1Cell,
           player2: match.player2Cell,
           score1: match.score1Cell,
-          score2: match.score2Cell
-        }
+          score2: match.score2Cell,
+        },
       });
     });
-    
+
     return {
       type: 'match-result-tracking',
-      matches: trackingFormulas
+      matches: trackingFormulas,
     };
   }
 
@@ -116,11 +113,11 @@ class FormulaTemplates {
       type: 'tournament-statistics',
       formulas: {
         totalMatches: `=COUNTA(${matchRanges.join(',')})`,
-        completedMatches: `=SUMPRODUCT(--(${matchRanges.map(range => `${range}<>""`).join(',--(')})`,
+        completedMatches: `=SUMPRODUCT(--(${matchRanges.map((range) => `${range}<>""`).join(',--(')})`,
         progress: FormulaBuilder.progressFormula(matchRanges.join(':')),
-        remainingMatches: `=COUNTA(${matchRanges.join(',')}) - SUMPRODUCT(--(${matchRanges.map(range => `${range}<>""`).join(',--(')})`,
-        tournamentComplete: `=SUMPRODUCT(--(${matchRanges.map(range => `${range}<>""`).join(',--(')}) = COUNTA(${matchRanges.join(',')})`
-      }
+        remainingMatches: `=COUNTA(${matchRanges.join(',')}) - SUMPRODUCT(--(${matchRanges.map((range) => `${range}<>""`).join(',--(')})`,
+        tournamentComplete: `=SUMPRODUCT(--(${matchRanges.map((range) => `${range}<>""`).join(',--(')}) = COUNTA(${matchRanges.join(',')})`,
+      },
     };
   }
 
@@ -131,7 +128,7 @@ class FormulaTemplates {
    */
   static bracketNavigation(bracketConfig) {
     const { spreadsheetId, sheetNames } = bracketConfig;
-    
+
     return {
       type: 'bracket-navigation',
       formulas: {
@@ -139,15 +136,13 @@ class FormulaTemplates {
           `#gid=${bracketConfig.qualifiersSheetId}`,
           'View Qualifiers'
         ),
-        goldBracketLink: sheetNames.gold ? FormulaBuilder.hyperlinkFormula(
-          `#gid=${bracketConfig.goldSheetId}`,
-          'Gold Bracket'
-        ) : null,
-        silverBracketLink: sheetNames.silver ? FormulaBuilder.hyperlinkFormula(
-          `#gid=${bracketConfig.silverSheetId}`,
-          'Silver Bracket'
-        ) : null
-      }
+        goldBracketLink: sheetNames.gold
+          ? FormulaBuilder.hyperlinkFormula(`#gid=${bracketConfig.goldSheetId}`, 'Gold Bracket')
+          : null,
+        silverBracketLink: sheetNames.silver
+          ? FormulaBuilder.hyperlinkFormula(`#gid=${bracketConfig.silverSheetId}`, 'Silver Bracket')
+          : null,
+      },
     };
   }
 
@@ -157,19 +152,13 @@ class FormulaTemplates {
    * @returns {Object} Complete formula template set
    */
   static completeBracketFormulas(config) {
-    const {
-      qualifierSheet,
-      bracketSize,
-      bracketSheet,
-      rounds,
-      spreadsheetId
-    } = config;
+    const { qualifierSheet, bracketSize, bracketSheet, rounds, spreadsheetId } = config;
 
     const templates = {
       seeding: this.singleEliminationSeeding(qualifierSheet, bracketSize),
       advancement: [],
       statistics: this.tournamentStatistics(bracketSheet, []), // Will be populated with actual ranges
-      navigation: this.bracketNavigation(config)
+      navigation: this.bracketNavigation(config),
     };
 
     // Generate advancement formulas for each round
@@ -186,7 +175,7 @@ class FormulaTemplates {
     return {
       type: 'complete-bracket',
       config,
-      templates
+      templates,
     };
   }
 
@@ -198,12 +187,12 @@ class FormulaTemplates {
   static _generateSeedPairs(bracketSize) {
     const seedPairs = [];
     const seeds = Array.from({ length: bracketSize }, (_, i) => i + 1);
-    
+
     // Standard tournament seeding: 1 vs last, 2 vs second-to-last, etc.
     for (let i = 0; i < bracketSize / 2; i++) {
       seedPairs.push([seeds[i], seeds[bracketSize - 1 - i]]);
     }
-    
+
     return seedPairs;
   }
 

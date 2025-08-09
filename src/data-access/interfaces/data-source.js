@@ -8,7 +8,7 @@ class DataSource {
    * @param {Object} options - Query options
    * @returns {Promise<Player[]>} Array of Player domain objects
    */
-  async getPlayers(options = {}) {
+  async getPlayers(/* options = {} */) {
     throw new Error('getPlayers must be implemented by subclass');
   }
 
@@ -17,7 +17,7 @@ class DataSource {
    * @param {Object} options - Query options
    * @returns {Promise<Match[]>} Array of Match domain objects
    */
-  async getMatches(options = {}) {
+  async getMatches(/* options = {} */) {
     throw new Error('getMatches must be implemented by subclass');
   }
 
@@ -26,7 +26,7 @@ class DataSource {
    * @param {Object} options - Query options
    * @returns {Promise<Object>} Tournament configuration object
    */
-  async getConfiguration(options = {}) {
+  async getConfiguration(/* options = {} */) {
     throw new Error('getConfiguration must be implemented by subclass');
   }
 
@@ -36,7 +36,7 @@ class DataSource {
    * @param {Object} options - Save options
    * @returns {Promise<void>}
    */
-  async savePlayers(players, options = {}) {
+  async savePlayers(/* players, options = {} */) {
     throw new Error('savePlayers must be implemented by subclass');
   }
 
@@ -46,7 +46,7 @@ class DataSource {
    * @param {Object} options - Save options
    * @returns {Promise<void>}
    */
-  async saveMatches(matches, options = {}) {
+  async saveMatches(/* matches, options = {} */) {
     throw new Error('saveMatches must be implemented by subclass');
   }
 

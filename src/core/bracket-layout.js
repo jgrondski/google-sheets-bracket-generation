@@ -1,6 +1,6 @@
 // ==================== src/core/bracket-layout.js ====================
 
-import { getPosition } from "../utils/math-utils.js";
+import { getPosition } from '../utils/math-utils.js';
 
 /**
  * Core bracket layout calculations and positioning logic
@@ -30,31 +30,31 @@ class BracketLayout {
 
         // Add player 1 - always add to maintain bracket structure
         if (p1 && p1.visible) {
-          if (p1.type === "seeded") {
-            roundPlayers.push({ seed: p1.seed, name: p1.name, score: "" });
+          if (p1.type === 'seeded') {
+            roundPlayers.push({ seed: p1.seed, name: p1.name, score: '' });
           } else {
-            roundPlayers.push({ seed: "", name: "", score: "" }); // Winner placeholder
+            roundPlayers.push({ seed: '', name: '', score: '' }); // Winner placeholder
           }
         } else {
           // Invisible bye - render as background space but maintain position
-          roundPlayers.push({ seed: "", name: "", score: "", isBye: true });
+          roundPlayers.push({ seed: '', name: '', score: '', isBye: true });
         }
 
         // Add player 2 - always add to maintain bracket structure, handle null case
         if (p2) {
           if (p2.visible) {
-            if (p2.type === "seeded") {
-              roundPlayers.push({ seed: p2.seed, name: p2.name, score: "" });
+            if (p2.type === 'seeded') {
+              roundPlayers.push({ seed: p2.seed, name: p2.name, score: '' });
             } else {
-              roundPlayers.push({ seed: "", name: "", score: "" }); // Winner placeholder
+              roundPlayers.push({ seed: '', name: '', score: '' }); // Winner placeholder
             }
           } else {
             // Invisible bye - render as background space but maintain position
-            roundPlayers.push({ seed: "", name: "", score: "", isBye: true });
+            roundPlayers.push({ seed: '', name: '', score: '', isBye: true });
           }
         } else {
           // No p2 (shouldn't happen in proper bracket, but handle gracefully)
-          roundPlayers.push({ seed: "", name: "", score: "", isBye: true });
+          roundPlayers.push({ seed: '', name: '', score: '', isBye: true });
         }
       });
 
@@ -62,7 +62,7 @@ class BracketLayout {
     }
 
     // Add champion round manually - single position for winner
-    const championRound = [{ seed: "", name: "", score: "" }]; // Champion winner placeholder
+    const championRound = [{ seed: '', name: '', score: '' }]; // Champion winner placeholder
     rounds.push(championRound);
 
     return rounds;

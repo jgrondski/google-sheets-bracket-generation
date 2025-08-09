@@ -1,6 +1,6 @@
 // ==================== src/services/google-sheets-service.js ====================
 
-import { google } from "googleapis";
+import { google } from 'googleapis';
 
 /**
  * Service for Google Sheets API operations
@@ -8,8 +8,8 @@ import { google } from "googleapis";
 class GoogleSheetsService {
   constructor(auth) {
     this.auth = auth;
-    this.sheets = google.sheets({ version: "v4", auth });
-    this.drive = google.drive({ version: "v3", auth });
+    this.sheets = google.sheets({ version: 'v4', auth });
+    this.drive = google.drive({ version: 'v3', auth });
   }
 
   /**
@@ -21,7 +21,7 @@ class GoogleSheetsService {
   async createSpreadsheet(title, folderId = null) {
     const resource = {
       name: title,
-      mimeType: "application/vnd.google-apps.spreadsheet",
+      mimeType: 'application/vnd.google-apps.spreadsheet',
     };
 
     if (folderId) {
@@ -30,7 +30,7 @@ class GoogleSheetsService {
 
     const file = await this.drive.files.create({
       resource,
-      fields: "id",
+      fields: 'id',
     });
 
     return file.data.id;
@@ -54,7 +54,7 @@ class GoogleSheetsService {
                 sheetId,
                 title: newName,
               },
-              fields: "title",
+              fields: 'title',
             },
           },
         ],
@@ -70,7 +70,7 @@ class GoogleSheetsService {
    */
   async batchUpdate(spreadsheetId, requests) {
     if (!requests || requests.length === 0) {
-      console.log("No requests to apply");
+      console.log('No requests to apply');
       return;
     }
 
@@ -78,24 +78,6 @@ class GoogleSheetsService {
       spreadsheetId,
       requestBody: { requests },
     });
-  }
-
-  async addSheet(spreadsheetId, title) {
-    const { data } = await this.sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [
-          {
-            addSheet: {
-              properties: {
-                title,
-              },
-            },
-          },
-        ],
-      },
-    });
-    return data.replies[0].addSheet.properties.sheetId;
   }
 
   /**
@@ -122,7 +104,7 @@ class GoogleSheetsService {
             sheetId,
             ...properties,
           },
-          fields: Object.keys(properties).join(","),
+          fields: Object.keys(properties).join(','),
         },
       },
     ];
@@ -145,7 +127,7 @@ class GoogleSheetsService {
             sheetId: sheetId,
             gridProperties: { columnCount },
           },
-          fields: "gridProperties.columnCount",
+          fields: 'gridProperties.columnCount',
         },
       },
     ];
@@ -171,7 +153,7 @@ class GoogleSheetsService {
             columnCount: columnCount,
           },
         },
-        fields: "gridProperties(rowCount,columnCount)",
+        fields: 'gridProperties(rowCount,columnCount)',
       },
     };
 

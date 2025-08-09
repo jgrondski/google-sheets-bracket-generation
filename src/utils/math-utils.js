@@ -56,10 +56,4 @@ function isPowerOfTwo(n) {
   return n > 0 && (n & (n - 1)) === 0;
 }
 
-export {
-  nextPowerOfTwo,
-  calculateRounds,
-  getPosition,
-  calculateByes,
-  isPowerOfTwo,
-};
+export { nextPowerOfTwo, calculateRounds, getPosition, calculateByes, isPowerOfTwo };
