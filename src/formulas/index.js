@@ -3,8 +3,7 @@
 
 // Core Formula Components
 export { FormulaBuilder } from './formula-builder.js';
-export { FormulaTemplates } from './formula-templates.js';
-export { FormulaManager } from './formula-manager.js';
+// Note: FormulaTemplates and FormulaManager are currently unused and not exported.
 
 // ==================== src/formulas/index.js ====================
 

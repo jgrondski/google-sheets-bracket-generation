@@ -214,4 +214,4 @@ class RequestBuilder {
   }
 }
 
-export default { RequestBuilder };
+export { RequestBuilder };

@@ -74,10 +74,35 @@ class GoogleSheetsService {
       return;
     }
 
-    await this.sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: { requests },
-    });
+    // Google Sheets API allows up to ~1000 requests per batch safely.
+    const chunkSize = 500;
+    for (let i = 0; i < requests.length; i += chunkSize) {
+      const chunk = requests.slice(i, i + chunkSize);
+      await this._batchUpdateWithRetry(spreadsheetId, chunk);
+    }
+  }
+
+  async _batchUpdateWithRetry(spreadsheetId, requests, retries = 3) {
+    let attempt = 0;
+    let delay = 500; // ms
+    while (true) {
+      try {
+        await this.sheets.spreadsheets.batchUpdate({
+          spreadsheetId,
+          requestBody: { requests },
+        });
+        return;
+      } catch (err) {
+        const status = err?.code || err?.response?.status;
+        const isRetryable = status === 429 || (status >= 500 && status < 600);
+        if (!isRetryable || attempt >= retries) {
+          throw err;
+        }
+        await new Promise((res) => setTimeout(res, delay));
+        delay *= 2;
+        attempt += 1;
+      }
+    }
   }
 
   /**
@@ -191,6 +216,51 @@ class GoogleSheetsService {
 
     // Return the new sheet ID
     return response.data.replies[0].addSheet.properties.sheetId;
+  }
+
+  /**
+   * Get basic sheet metadata by title
+   */
+  async getSheetByTitle(spreadsheetId, title) {
+    const resp = await this.sheets.spreadsheets.get({ spreadsheetId });
+    const sheet = resp.data.sheets?.find((s) => s.properties.title === title);
+    if (!sheet) return null;
+    return {
+      id: sheet.properties.sheetId,
+      title: sheet.properties.title,
+      index: sheet.properties.index,
+      gridProperties: sheet.properties.gridProperties,
+    };
+  }
+
+  /**
+   * Idempotently find or create a sheet and optionally resize
+   */
+  async findOrCreateSheet(spreadsheetId, title, rowCount = 1000, columnCount = 26) {
+    const existing = await this.getSheetByTitle(spreadsheetId, title);
+    if (existing) {
+      // Ensure minimum size
+      const currentRows = existing.gridProperties?.rowCount ?? 0;
+      const currentCols = existing.gridProperties?.columnCount ?? 0;
+      const needsResize = currentRows < rowCount || currentCols < columnCount;
+      if (needsResize) {
+        await this.resizeSheet(
+          spreadsheetId,
+          existing.id,
+          Math.max(currentRows, rowCount),
+          Math.max(currentCols, columnCount)
+        );
+      }
+      return existing.id;
+    }
+    return await this.addSheet(spreadsheetId, title, rowCount, columnCount);
+  }
+
+  /**
+   * Simple values.get wrapper
+   */
+  async getSheetData(spreadsheetId, range) {
+    return await this.sheets.spreadsheets.values.get({ spreadsheetId, range });
   }
 }
 

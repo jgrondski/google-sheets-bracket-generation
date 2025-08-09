@@ -87,7 +87,6 @@ class BuildBracketCommand {
       // 5. Create combined Quals sheet
       const qualsSheetCreator = new QualsSheetCreator(this.auth);
       await qualsSheetCreator.create(spreadsheet.spreadsheetId, tournament, config);
-      console.log(`✅ Combined Qualifiers sheet created`);
 
       // 6. Create match tracking sheets
       const matchSheetCreator = new MatchSheetCreator(this.auth);
@@ -98,14 +97,12 @@ class BuildBracketCommand {
           tournament,
           config
         );
-        console.log(`✅ Match tracking sheets created for all brackets`);
       } else {
         await matchSheetCreator.createSingleBracketMatchSheet(
           spreadsheet.spreadsheetId,
           tournament,
           config
         );
-        console.log(`✅ Match tracking sheet created`);
       }
 
       // 7. Handle rendering based on tournament type
@@ -177,11 +174,7 @@ class BuildBracketCommand {
         config,
         bracketType
       );
-
-      console.log(`✅ ${bracketType} bracket rendered to sheet: ${sheetInfo.sheetName}`);
     }
-
-    console.log('✅ All brackets rendered to separate sheets successfully');
   }
 
   /**

@@ -1,6 +1,7 @@
 // ==================== src/services/match-sheet-creator.js ====================
 
 import { GoogleSheetsService } from './google-sheets-service.js';
+import { getColumnsPerRound as getColumnsPerRoundUtil } from '../utils/sheet-layout.js';
 
 /**
  * Service for creating interactive match tracking sheets
@@ -25,7 +26,7 @@ class MatchSheetCreator {
     console.log(`🎯 Creating match tracking sheet: ${sheetName}`);
 
     // Calculate required columns based on bestOf and number of rounds
-    const columnsPerRound = this.getColumnsPerRound(config);
+    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
     const maxRounds = tournament.getBracket().numRounds;
     const columnCount = columnsPerRound * maxRounds + 10; // Add buffer
 
@@ -226,9 +227,7 @@ class MatchSheetCreator {
    * @returns {number} Number of columns per round
    */
   getColumnsPerRound(config, bracketType = null) {
-    const bestOf = config.getBestOf(bracketType);
-    // Match + Seed + Username + Score + Game columns + Loss T + spacer
-    return 4 + bestOf + 1 + 1; // 4 fixed columns + bestOf game columns + Loss T + 1 spacer
+    return getColumnsPerRoundUtil(config, bracketType);
   }
 
   /**
@@ -236,10 +235,11 @@ class MatchSheetCreator {
    * @param {number} sheetId - Sheet ID
    * @param {BracketConfig} config - Configuration for bestOf settings
    * @param {number} numRounds - Number of rounds in the tournament
+   * @param {string} bracketType - Bracket type for header bestOf
    * @returns {Array} Array of requests
    */
-  createHeaderRequests(sheetId, config, numRounds) {
-    const bestOf = config.getBestOf(null);
+  createHeaderRequests(sheetId, config, numRounds, bracketType) {
+    const bestOf = config.getBestOf(bracketType);
     const baseHeaders = ['Match', 'Seed', 'Username'];
 
     // Add game columns based on bestOf
@@ -531,7 +531,6 @@ class MatchSheetCreator {
     // Apply column widths immediately (separate batch like bracket renderer)
     if (columnWidthRequests.length > 0) {
       await this.sheetsService.batchUpdate(spreadsheetId, columnWidthRequests);
-      console.log(`📏 Applied ${columnWidthRequests.length} column width updates`);
     }
 
     // 2. Add score dropdowns to the SCORE column only for actual match rows
@@ -591,7 +590,6 @@ class MatchSheetCreator {
     // Apply dropdown requests
     if (requests.length > 0) {
       await this.sheetsService.batchUpdate(spreadsheetId, requests);
-      console.log(`🎯 Applied ${requests.length} dropdown validations`);
     }
 
     // 3. Add integer validation and comma formatting to Game and Loss T columns
@@ -616,10 +614,6 @@ class MatchSheetCreator {
       lightYellow3,
       lightGrey1,
       black
-    );
-
-    console.log(
-      `🎨 Applied formatting: score dropdowns (${maxScore} to 0), Game/Loss T integer formatting with commas, column widths, and background colors`
     );
   }
 
@@ -769,9 +763,6 @@ class MatchSheetCreator {
     // Apply Game and Loss T formatting requests
     if (requests.length > 0) {
       await this.sheetsService.batchUpdate(spreadsheetId, requests);
-      console.log(
-        `🔢 Applied ${requests.length} Game and Loss T integer formatting and validations`
-      );
     }
   }
 
@@ -1143,8 +1134,6 @@ class MatchSheetCreator {
     const columnsPerRound = this.getColumnsPerRound(config, bracketType);
     const maxScore = config.getMaxScore(bracketType);
 
-    console.log(`🔗 Applying winner advancement formulas (maxScore: ${maxScore})...`);
-
     // Process each round to create advancement formulas for the next round
     for (let roundIndex = 0; roundIndex < matchData.numRounds - 1; roundIndex++) {
       const currentRound = matchData.rounds[roundIndex];
@@ -1235,7 +1224,6 @@ class MatchSheetCreator {
     // Apply all advancement formulas
     if (requests.length > 0) {
       await this.sheetsService.batchUpdate(spreadsheetId, requests);
-      console.log(`✅ Applied ${requests.length / 2} winner advancement formulas`);
     }
   }
 
@@ -1252,8 +1240,6 @@ class MatchSheetCreator {
     const columnsPerRound = this.getColumnsPerRound(config, bracketType);
     const maxScore = config.getMaxScore(bracketType);
     const bestOf = config.getBestOf(bracketType);
-
-    console.log(`🔢 Applying Loss T formulas (maxScore: ${maxScore}, bestOf: ${bestOf})...`);
 
     for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
       const round = matchData.rounds[roundIndex];
@@ -1344,7 +1330,6 @@ class MatchSheetCreator {
     // Apply all Loss T formulas
     if (requests.length > 0) {
       await this.sheetsService.batchUpdate(spreadsheetId, requests);
-      console.log(`✅ Applied ${requests.length} Loss T formulas`);
     }
   }
 

@@ -1,8 +1,7 @@
 // ==================== src/services/bracket-renderer.js ====================
 
 import { GoogleSheetsService } from './google-sheets-service.js';
-import RequestBuilderDefault from '../factories/request-builder.js';
-const { RequestBuilder } = RequestBuilderDefault;
+import { RequestBuilder } from '../factories/request-builder.js';
 import PlayerGroup from '../models/player-group.js';
 import { getPosition } from '../utils/math-utils.js';
 import { matchCellRef, winnerIfMaxScore } from '../formulas/index.js';
