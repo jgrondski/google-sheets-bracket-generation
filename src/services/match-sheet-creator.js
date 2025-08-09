@@ -235,6 +235,24 @@ class MatchSheetCreator {
       config,
       bracketType
     );
+
+    // Apply winner advancement formulas
+    await this.applyWinnerAdvancementFormulas(
+      spreadsheetId,
+      sheetId,
+      matchData,
+      config,
+      bracketType
+    );
+
+    // Apply Loss T formulas
+    await this.applyLossTFormulas(
+      spreadsheetId,
+      sheetId,
+      matchData,
+      config,
+      bracketType
+    );
   }
 
   /**
@@ -245,8 +263,8 @@ class MatchSheetCreator {
    */
   getColumnsPerRound(config, bracketType = null) {
     const bestOf = config.getBestOf(bracketType);
-    // Match + Seed + Username + Score + Loss T + Game columns + spacer
-    return 5 + bestOf + 1; // 5 fixed columns + bestOf game columns + 1 spacer
+    // Match + Seed + Username + Score + Game columns + Loss T + spacer
+    return 4 + bestOf + 1 + 1; // 4 fixed columns + bestOf game columns + Loss T + 1 spacer
   }
 
   /**
@@ -259,7 +277,7 @@ class MatchSheetCreator {
    */
   createHeaderRequests(sheetId, config, numRounds, bracketType = null) {
     const bestOf = config.getBestOf(bracketType);
-    const baseHeaders = ["Match", "Seed", "Username", "Score", "Loss T"];
+    const baseHeaders = ["Match", "Seed", "Username"];
 
     // Add game columns based on bestOf
     const gameHeaders = [];
@@ -267,8 +285,8 @@ class MatchSheetCreator {
       gameHeaders.push(`Game ${i}`);
     }
 
-    // Complete header set for one round
-    const headers = [...baseHeaders, ...gameHeaders, ""]; // "" is spacer column
+    // Complete header set for one round: Match, Seed, Username, Score, Game1-N, Loss T, Spacer
+    const headers = [...baseHeaders, "Score", ...gameHeaders, "Loss T", ""]; // "" is spacer column
 
     // Use actual number of rounds from tournament
     const headerRows = [];
@@ -526,57 +544,867 @@ class MatchSheetCreator {
     const requests = [];
     const columnsPerRound = this.getColumnsPerRound(config, bracketType);
     const maxScore = config.getMaxScore(bracketType);
+    const bestOf = config.getBestOf(bracketType);
 
-    // Add score dropdowns for each round
+    // Define colors using proper hex values converted to RGB decimals
+    const lightBlue3 = { red: 0.812, green: 0.886, blue: 0.953 }; // #cfe2f3 (207/255, 226/255, 243/255)
+    const lightYellow3 = { red: 1.0, green: 0.949, blue: 0.8 }; // #fff2cc (255/255, 242/255, 204/255)
+    const lightGrey1 = { red: 0.851, green: 0.851, blue: 0.851 }; // #d9d9d9 (217/255, 217/255, 217/255)
+    const black = { red: 0.0, green: 0.0, blue: 0.0 };
+
+    // Calculate the actual data range (matches only, stop at the last actual data row)
+    let maxDataRow = 1; // Start with header row
+    for (const round of matchData.rounds) {
+      const roundMaxRow = 1 + (round.matches.length * 3) - 1; // Last actual data row (header + matches * 3 rows each, minus 1 to exclude extra row)
+      if (roundMaxRow > maxDataRow) {
+        maxDataRow = roundMaxRow;
+      }
+    }
+
+    // Define column widths (same approach as bracket renderer)
+    const columnWidths = [
+      46, // Match (A) - updated to 46px
+      35, // Seed (B)  
+      130, // Username (C)
+      40, // Score (D)
+    ];
+    
+    // Add Game columns
+    for (let i = 0; i < bestOf; i++) {
+      columnWidths.push(65); // Game columns
+    }
+    
+    columnWidths.push(65); // Loss T
+    columnWidths.push(50); // Spacer - updated to 50px
+
+    // 1. Set column widths using the same approach as bracket renderer
+    const columnWidthRequests = [];
     for (let round = 0; round < matchData.numRounds; round++) {
-      const scoreColumnIndex = round * columnsPerRound + 3; // Score is 4th column (index 3) in each round
+      const startCol = round * columnsPerRound;
+      for (let i = 0; i < columnWidths.length && i < columnsPerRound; i++) {
+        columnWidthRequests.push({
+          updateDimensionProperties: {
+            range: {
+              sheetId: sheetId,
+              dimension: "COLUMNS",
+              startIndex: startCol + i,
+              endIndex: startCol + i + 1,
+            },
+            properties: { pixelSize: columnWidths[i] },
+            fields: "pixelSize",
+          },
+        });
+      }
+    }
 
-      // Create dropdown values from -1 to maxScore
+    // Apply column widths immediately (separate batch like bracket renderer)
+    if (columnWidthRequests.length > 0) {
+      await this.sheetsService.batchUpdate(spreadsheetId, columnWidthRequests);
+      console.log(`📏 Applied ${columnWidthRequests.length} column width updates`);
+    }
+
+    // 2. Add score dropdowns to the SCORE column only for actual match rows
+    for (let round = 0; round < matchData.numRounds; round++) {
+      const roundData = matchData.rounds[round];
+      const scoreColumnIndex = round * columnsPerRound + 3; // Score is 4th column (index 3)
+
+      // Create dropdown values from maxScore to 0 (reverse sorted)
       const dropdownValues = [];
-      for (let i = -1; i <= maxScore; i++) {
+      for (let i = maxScore; i >= 0; i--) {
         dropdownValues.push({ userEnteredValue: i.toString() });
       }
 
+      // Apply dropdowns only to actual match rows (not spacer rows)
+      for (let matchIndex = 0; matchIndex < roundData.matches.length; matchIndex++) {
+        const match = roundData.matches[matchIndex];
+        const baseRow = 2 + (matchIndex * 3); // Starting row for this match
+
+        // Apply to both player rows in the match (skip the spacer row)
+        for (let playerRow = 0; playerRow < 2; playerRow++) {
+          const currentRow = baseRow + playerRow;
+          
+          // Only add dropdown if this position has a player or will get a formula
+          const hasPlayer = playerRow === 0 ? match.position1 : match.position2;
+          const willGetFormula = this.positionWillGetFormula(round, matchIndex, playerRow, matchData);
+          
+          if (hasPlayer || willGetFormula) {
+            requests.push({
+              setDataValidation: {
+                range: {
+                  sheetId: sheetId,
+                  startRowIndex: currentRow - 1, // Convert to 0-indexed
+                  endRowIndex: currentRow,
+                  startColumnIndex: scoreColumnIndex,
+                  endColumnIndex: scoreColumnIndex + 1,
+                },
+                rule: {
+                  condition: {
+                    type: "ONE_OF_LIST",
+                    values: dropdownValues,
+                  },
+                  strict: true,
+                  showCustomUi: true,
+                },
+              },
+            });
+          }
+        }
+      }
+    }
+
+    // Apply dropdown requests
+    if (requests.length > 0) {
+      await this.sheetsService.batchUpdate(spreadsheetId, requests);
+      console.log(`🎯 Applied ${requests.length} dropdown validations`);
+    }
+
+    // 3. Add integer validation and comma formatting to Game and Loss T columns
+    await this.applyGameAndLossTFormatting(spreadsheetId, sheetId, matchData, config, bracketType, maxDataRow);
+
+    // 4. Apply background colors
+    await this.applyBackgroundColors(spreadsheetId, sheetId, matchData, config, bracketType, maxDataRow, lightBlue3, lightYellow3, lightGrey1, black);
+
+    console.log(
+      `🎨 Applied formatting: score dropdowns (${maxScore} to 0), Game/Loss T integer formatting with commas, column widths, and background colors`
+    );
+  }
+
+  /**
+   * Check if a position will receive a formula (advancement from previous round)
+   */
+  positionWillGetFormula(roundIndex, matchIndex, positionIndex, matchData) {
+    if (roundIndex === 0) return false; // Round 1 positions don't get formulas
+    
+    // Check if there's an advancement mapping that targets this position
+    const currentRound = matchData.rounds[roundIndex];
+    const previousRound = matchData.rounds[roundIndex - 1];
+    
+    if (!currentRound || !previousRound) return false;
+    
+    const mappings = this.getAdvancementMappings(previousRound, currentRound, roundIndex - 1, roundIndex);
+    
+    return mappings.some(mapping => 
+      mapping.destMatchIndex === matchIndex && 
+      mapping.destPlayerIndex === positionIndex
+    );
+  }
+
+  /**
+   * Apply integer validation and comma formatting to Game and Loss T columns
+   * @param {string} spreadsheetId - Spreadsheet ID
+   * @param {number} sheetId - Sheet ID
+   * @param {Object} matchData - Match data structure
+   * @param {BracketConfig} config - Configuration
+   * @param {string} bracketType - Optional bracket type for bracket-specific settings
+   * @param {number} maxDataRow - Maximum data row to format
+   */
+  async applyGameAndLossTFormatting(spreadsheetId, sheetId, matchData, config, bracketType, maxDataRow) {
+    const requests = [];
+    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
+    const bestOf = config.getBestOf(bracketType);
+
+    for (let round = 0; round < matchData.numRounds; round++) {
+      const startCol = round * columnsPerRound;
+      const gameColsStart = startCol + 4; // Game columns start after Match, Seed, Username, Score
+      const gameColsEnd = gameColsStart + bestOf; // Game columns end
+      const lossTCol = startCol + 4 + bestOf; // Loss T column is after Score + Game columns
+
+      // Apply to Game columns (Game 1, Game 2, etc.)
+      for (let gameCol = gameColsStart; gameCol < gameColsEnd; gameCol++) {
+        requests.push({
+          repeatCell: {
+            range: {
+              sheetId: sheetId,
+              startRowIndex: 1, // Skip header row
+              endRowIndex: maxDataRow,
+              startColumnIndex: gameCol,
+              endColumnIndex: gameCol + 1,
+            },
+            cell: {
+              userEnteredFormat: {
+                numberFormat: {
+                  type: "NUMBER",
+                  pattern: "#,##0", // Integer with comma separators
+                },
+              },
+            },
+            fields: "userEnteredFormat.numberFormat",
+          },
+        });
+
+        // Add data validation to only allow whole numbers
+        requests.push({
+          setDataValidation: {
+            range: {
+              sheetId: sheetId,
+              startRowIndex: 1, // Skip header row
+              endRowIndex: maxDataRow,
+              startColumnIndex: gameCol,
+              endColumnIndex: gameCol + 1,
+            },
+            rule: {
+              condition: {
+                type: "NUMBER_GREATER_THAN_EQ",
+                values: [{ userEnteredValue: "0" }],
+              },
+              strict: true,
+              showCustomUi: true,
+              inputMessage: "Please enter a whole number (0 or greater)",
+            },
+          },
+        });
+      }
+
+      // Apply to Loss T column
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId: sheetId,
+            startRowIndex: 1, // Skip header row
+            endRowIndex: maxDataRow,
+            startColumnIndex: lossTCol,
+            endColumnIndex: lossTCol + 1,
+          },
+          cell: {
+            userEnteredFormat: {
+              numberFormat: {
+                type: "NUMBER",
+                pattern: "#,##0", // Integer with comma separators
+              },
+            },
+          },
+          fields: "userEnteredFormat.numberFormat",
+        },
+      });
+
+      // Add data validation to Loss T column
       requests.push({
         setDataValidation: {
           range: {
             sheetId: sheetId,
             startRowIndex: 1, // Skip header row
-            endRowIndex: 1000,
-            startColumnIndex: scoreColumnIndex,
-            endColumnIndex: scoreColumnIndex + 1,
+            endRowIndex: maxDataRow,
+            startColumnIndex: lossTCol,
+            endColumnIndex: lossTCol + 1,
           },
           rule: {
             condition: {
-              type: "ONE_OF_LIST",
-              values: dropdownValues,
+              type: "NUMBER_GREATER_THAN_EQ",
+              values: [{ userEnteredValue: "0" }],
             },
             strict: true,
             showCustomUi: true,
+            inputMessage: "Please enter a whole number (0 or greater)",
           },
         },
       });
     }
 
-    // Auto-resize columns
-    requests.push({
-      autoResizeDimensions: {
-        dimensions: {
-          sheetId: sheetId,
-          dimension: "COLUMNS",
-          startIndex: 0,
-          endIndex: columnsPerRound * matchData.numRounds,
-        },
-      },
-    });
-
-    // Apply all formatting requests
+    // Apply Game and Loss T formatting requests
     if (requests.length > 0) {
       await this.sheetsService.batchUpdate(spreadsheetId, requests);
-      console.log(
-        `🎨 Applied formatting: score dropdowns (-1 to ${maxScore}) and auto-sized columns`
-      );
+      console.log(`🔢 Applied ${requests.length} Game and Loss T integer formatting and validations`);
     }
+  }
+
+  /**
+   * Apply background colors with the specific pattern requested
+   */
+  async applyBackgroundColors(spreadsheetId, sheetId, matchData, config, bracketType, maxDataRow, lightBlue3, lightYellow3, lightGrey1, black) {
+    const requests = [];
+    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
+    const bestOf = config.getBestOf(bracketType);
+    const white = { red: 1.0, green: 1.0, blue: 1.0 }; // White color for spacer columns
+
+    // First pass: Apply alternating light grey background to data area only
+    for (let round = 0; round < matchData.numRounds; round++) {
+      const startCol = round * columnsPerRound;
+      const endCol = startCol + columnsPerRound;
+
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId: sheetId,
+            startRowIndex: 1, // Skip header row
+            endRowIndex: maxDataRow, // Use corrected maxDataRow
+            startColumnIndex: startCol,
+            endColumnIndex: endCol,
+          },
+          cell: {
+            userEnteredFormat: {
+              backgroundColor: lightGrey1,
+            },
+          },
+          fields: "userEnteredFormat.backgroundColor",
+        },
+      });
+    }
+
+    // Second pass: Apply specific colors for Username and Loss T (Light Blue 3)
+    for (let round = 0; round < matchData.numRounds; round++) {
+      const startCol = round * columnsPerRound;
+      const usernameCol = startCol + 2; // Username column
+      const lossTCol = startCol + 4 + bestOf; // Loss T column is after Score + Game columns
+
+      // Username column
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId: sheetId,
+            startRowIndex: 1, // Skip header row
+            endRowIndex: maxDataRow, // Use corrected maxDataRow
+            startColumnIndex: usernameCol,
+            endColumnIndex: usernameCol + 1,
+          },
+          cell: {
+            userEnteredFormat: {
+              backgroundColor: lightBlue3,
+            },
+          },
+          fields: "userEnteredFormat.backgroundColor",
+        },
+      });
+
+      // Loss T column
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId: sheetId,
+            startRowIndex: 1, // Skip header row
+            endRowIndex: maxDataRow, // Use corrected maxDataRow
+            startColumnIndex: lossTCol,
+            endColumnIndex: lossTCol + 1,
+          },
+          cell: {
+            userEnteredFormat: {
+              backgroundColor: lightBlue3,
+            },
+          },
+          fields: "userEnteredFormat.backgroundColor",
+        },
+      });
+    }
+
+    // Third pass: Apply Light Yellow 3 to Score and Game columns
+    for (let round = 0; round < matchData.numRounds; round++) {
+      const startCol = round * columnsPerRound;
+      const scoreCol = startCol + 3; // Score column
+      const gameColsStart = startCol + 4; // Game columns start
+      const gameColsEnd = gameColsStart + bestOf; // Game columns end
+
+      // Score column
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId: sheetId,
+            startRowIndex: 1, // Skip header row
+            endRowIndex: maxDataRow, // Use corrected maxDataRow
+            startColumnIndex: scoreCol,
+            endColumnIndex: scoreCol + 1,
+          },
+          cell: {
+            userEnteredFormat: {
+              backgroundColor: lightYellow3,
+            },
+          },
+          fields: "userEnteredFormat.backgroundColor",
+        },
+      });
+
+      // Game columns
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId: sheetId,
+            startRowIndex: 1, // Skip header row
+            endRowIndex: maxDataRow, // Use corrected maxDataRow
+            startColumnIndex: gameColsStart,
+            endColumnIndex: gameColsEnd,
+          },
+          cell: {
+            userEnteredFormat: {
+              backgroundColor: lightYellow3,
+            },
+          },
+          fields: "userEnteredFormat.backgroundColor",
+        },
+      });
+    }
+
+    // Apply all background color requests
+    if (requests.length > 0) {
+      await this.sheetsService.batchUpdate(spreadsheetId, requests);
+    }
+
+    // Fourth pass (3rd to last): Apply light grey 1 background to spacer rows
+    await this.applySpacerRowBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, lightGrey1);
+
+    // Fifth pass (2nd to last): Apply white background to spacer columns
+    await this.applySpacerColumnBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, white, maxDataRow);
+
+    // Final pass (last): Apply black backgrounds below the last match in each round
+    await this.applyBlackBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, black);
+  }
+
+  /**
+   * Apply light grey 1 background to spacer rows (4, 7, 10, 13, etc)
+   */
+  async applySpacerRowBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, lightGrey1) {
+    const requests = [];
+
+    for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
+      const round = matchData.rounds[roundIndex];
+      const startCol = roundIndex * columnsPerRound;
+      const endCol = startCol + columnsPerRound;
+
+      // Apply light grey 1 to spacer rows (every 3rd row starting from row 4: rows 4, 7, 10, 13, etc)
+      // BUT skip the spacer row for the last match in each round
+      for (let matchIndex = 0; matchIndex < round.matches.length; matchIndex++) {
+        // Skip spacer row for the last match in the round
+        if (matchIndex === round.matches.length - 1) {
+          continue; // Don't add spacer row background for the last match
+        }
+
+        const spacerRow = 2 + (matchIndex * 3) + 2 - 1; // Match starts at row 2, spacer is 3rd row of each match, corrected by -1
+
+        requests.push({
+          repeatCell: {
+            range: {
+              sheetId: sheetId,
+              startRowIndex: spacerRow, // 0-indexed (row 4 = index 3, etc)
+              endRowIndex: spacerRow + 1,
+              startColumnIndex: startCol,
+              endColumnIndex: endCol,
+            },
+            cell: {
+              userEnteredFormat: {
+                backgroundColor: lightGrey1,
+              },
+            },
+            fields: "userEnteredFormat.backgroundColor",
+          },
+        });
+      }
+    }
+
+    // Apply spacer row background requests
+    if (requests.length > 0) {
+      await this.sheetsService.batchUpdate(spreadsheetId, requests);
+    }
+  }
+
+  /**
+   * Apply white background to spacer columns (last column of each round)
+   */
+  async applySpacerColumnBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, white, maxDataRow) {
+    const requests = [];
+
+    for (let round = 0; round < matchData.numRounds; round++) {
+      const startCol = round * columnsPerRound;
+      const spacerCol = startCol + columnsPerRound - 1; // Last column in each round is spacer
+
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId: sheetId,
+            startRowIndex: 1, // Skip header row
+            endRowIndex: maxDataRow, // Use corrected maxDataRow
+            startColumnIndex: spacerCol,
+            endColumnIndex: spacerCol + 1,
+          },
+          cell: {
+            userEnteredFormat: {
+              backgroundColor: white,
+            },
+          },
+          fields: "userEnteredFormat.backgroundColor",
+        },
+      });
+    }
+
+    // Apply spacer column background requests
+    if (requests.length > 0) {
+      await this.sheetsService.batchUpdate(spreadsheetId, requests);
+    }
+  }
+
+  /**
+   * Apply black backgrounds to rows below the last match in each round
+   */
+  async applyBlackBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, black) {
+    const requests = [];
+
+    for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
+      const round = matchData.rounds[roundIndex];
+      const startCol = roundIndex * columnsPerRound;
+      // For the final round, exclude the spacer column to avoid extending too far
+      const isLastRound = roundIndex === matchData.numRounds - 1;
+      const endCol = startCol + (isLastRound ? columnsPerRound - 1 : columnsPerRound);
+
+      // Calculate the row after the last match in this round (one row up as requested)
+      const lastMatchEndRow = 1 + (round.matches.length * 3); // Row after last match, moved up by 1
+      
+      // Find the end of Round 1 to determine black area
+      const round1 = matchData.rounds[0];
+      const round1EndRow = 1 + (round1.matches.length * 3); // Row after last Round 1 match, moved up by 1
+
+      // Apply black background from last match to end of Round 1
+      if (lastMatchEndRow < round1EndRow) {
+        requests.push({
+          repeatCell: {
+            range: {
+              sheetId: sheetId,
+              startRowIndex: lastMatchEndRow - 1, // Convert to 0-indexed
+              endRowIndex: round1EndRow - 1,
+              startColumnIndex: startCol,
+              endColumnIndex: endCol,
+            },
+            cell: {
+              userEnteredFormat: {
+                backgroundColor: black,
+                textFormat: {
+                  foregroundColor: black,
+                },
+              },
+            },
+            fields: "userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.foregroundColor",
+          },
+        });
+      }
+    }
+
+    // Apply black background requests
+    if (requests.length > 0) {
+      await this.sheetsService.batchUpdate(spreadsheetId, requests);
+    }
+  }
+
+  /**
+   * Apply winner advancement formulas to populate match winners in subsequent rounds
+   * @param {string} spreadsheetId - Spreadsheet ID
+   * @param {number} sheetId - Sheet ID
+   * @param {Object} matchData - Match data structure
+   * @param {BracketConfig} config - Configuration
+   * @param {string} bracketType - Optional bracket type for bracket-specific settings
+   */
+  async applyWinnerAdvancementFormulas(
+    spreadsheetId,
+    sheetId,
+    matchData,
+    config,
+    bracketType = null
+  ) {
+    const requests = [];
+    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
+    const maxScore = config.getMaxScore(bracketType);
+
+    console.log(`🔗 Applying winner advancement formulas (maxScore: ${maxScore})...`);
+
+    // Process each round to create advancement formulas for the next round
+    for (let roundIndex = 0; roundIndex < matchData.numRounds - 1; roundIndex++) {
+      const currentRound = matchData.rounds[roundIndex];
+      const nextRoundIndex = roundIndex + 1;
+      const nextRound = matchData.rounds[nextRoundIndex];
+
+      if (!currentRound || !nextRound) continue;
+
+      // Create advancement formulas based on bracket structure
+      const advancementMappings = this.getAdvancementMappings(
+        currentRound,
+        nextRound,
+        roundIndex,
+        nextRoundIndex
+      );
+
+      for (const mapping of advancementMappings) {
+        const sourceMatch = currentRound.matches[mapping.sourceMatchIndex];
+        if (!sourceMatch) continue;
+
+        // Calculate source cell positions (updated for new column layout)
+        const sourceStartColumn = roundIndex * columnsPerRound;
+        const sourceRow1 = 2 + (mapping.sourceMatchIndex * 3); // Player 1 row (starts at row 2)
+        const sourceRow2 = sourceRow1 + 1; // Player 2 row
+        const sourceScoreCol = sourceStartColumn + 3; // Score column (Match=0, Seed=1, Username=2, Score=3)
+        const sourceSeedCol = sourceStartColumn + 1; // Seed column
+        const sourceUsernameCol = sourceStartColumn + 2; // Username column
+
+        // Calculate destination cell positions
+        const destStartColumn = nextRoundIndex * columnsPerRound;
+        const destRow = 2 + (mapping.destMatchIndex * 3) + mapping.destPlayerIndex;
+        const destSeedCol = destStartColumn + 1;
+        const destUsernameCol = destStartColumn + 2;
+
+        // Convert column indices to Excel column letters
+        const sourceSeedColLetter = this.getColumnLetter(sourceSeedCol);
+        const sourceUsernameColLetter = this.getColumnLetter(sourceUsernameCol);
+        const sourceScoreColLetter = this.getColumnLetter(sourceScoreCol);
+        const destSeedColLetter = this.getColumnLetter(destSeedCol);
+        const destUsernameColLetter = this.getColumnLetter(destUsernameCol);
+
+        // Create simplified winner formulas
+        const seedFormula = `=IF(${sourceScoreColLetter}${sourceRow1}=${maxScore},${sourceSeedColLetter}${sourceRow1},IF(${sourceScoreColLetter}${sourceRow2}=${maxScore},${sourceSeedColLetter}${sourceRow2},""))`;
+        const usernameFormula = `=IF(${sourceScoreColLetter}${sourceRow1}=${maxScore},${sourceUsernameColLetter}${sourceRow1},IF(${sourceScoreColLetter}${sourceRow2}=${maxScore},${sourceUsernameColLetter}${sourceRow2},""))`;
+
+        // Add seed formula request
+        requests.push({
+          updateCells: {
+            rows: [{
+              values: [{
+                userEnteredValue: { formulaValue: seedFormula }
+              }]
+            }],
+            fields: "userEnteredValue.formulaValue",
+            start: {
+              sheetId: sheetId,
+              rowIndex: destRow - 1, // Convert to 0-indexed
+              columnIndex: destSeedCol
+            }
+          }
+        });
+
+        // Add username formula request
+        requests.push({
+          updateCells: {
+            rows: [{
+              values: [{
+                userEnteredValue: { formulaValue: usernameFormula }
+              }]
+            }],
+            fields: "userEnteredValue.formulaValue",
+            start: {
+              sheetId: sheetId,
+              rowIndex: destRow - 1, // Convert to 0-indexed
+              columnIndex: destUsernameCol
+            }
+          }
+        });
+
+        console.log(`📍 R${roundIndex + 1}M${mapping.sourceMatchIndex + 1} winner → R${nextRoundIndex + 1}M${mapping.destMatchIndex + 1}P${mapping.destPlayerIndex + 1} (${destSeedColLetter}${destRow}, ${destUsernameColLetter}${destRow})`);
+      }
+    }
+
+    // Apply all advancement formulas
+    if (requests.length > 0) {
+      await this.sheetsService.batchUpdate(spreadsheetId, requests);
+      console.log(`✅ Applied ${requests.length / 2} winner advancement formulas`);
+    }
+  }
+
+  /**
+   * Apply Loss T formulas to calculate accumulated losing scores for match losers
+   * @param {string} spreadsheetId - Spreadsheet ID
+   * @param {number} sheetId - Sheet ID
+   * @param {Object} matchData - Match data structure
+   * @param {BracketConfig} config - Configuration
+   * @param {string} bracketType - Optional bracket type for bracket-specific settings
+   */
+  async applyLossTFormulas(
+    spreadsheetId,
+    sheetId,
+    matchData,
+    config,
+    bracketType = null
+  ) {
+    const requests = [];
+    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
+    const maxScore = config.getMaxScore(bracketType);
+    const bestOf = config.getBestOf(bracketType);
+
+    console.log(`🔢 Applying Loss T formulas (maxScore: ${maxScore}, bestOf: ${bestOf})...`);
+
+    // Process each round to create Loss T formulas
+    for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
+      const round = matchData.rounds[roundIndex];
+
+      for (let matchIndex = 0; matchIndex < round.matches.length; matchIndex++) {
+        const match = round.matches[matchIndex];
+
+        // Skip matches without real players
+        if (!match.position1 || !match.position2) continue;
+
+        // Calculate cell positions for this match
+        const startColumn = roundIndex * columnsPerRound;
+        const player1Row = 2 + (matchIndex * 3); // Player 1 row
+        const player2Row = player1Row + 1; // Player 2 row
+        
+        const scoreCol = startColumn + 3; // Score column
+        const gameColsStart = startColumn + 4; // Game columns start
+        const lossTCol = startColumn + 4 + bestOf; // Loss T column
+
+        // Convert to Excel letters
+        const scoreColLetter = this.getColumnLetter(scoreCol);
+        const lossTColLetter = this.getColumnLetter(lossTCol);
+
+        // Create Loss T formula for each player position
+        for (let playerIndex = 0; playerIndex < 2; playerIndex++) {
+          const currentPlayerRow = playerIndex === 0 ? player1Row : player2Row;
+          const otherPlayerRow = playerIndex === 0 ? player2Row : player1Row;
+
+          // Build game column references for both players
+          const currentPlayerGameRefs = [];
+          const otherPlayerGameRefs = [];
+          
+          for (let gameIndex = 0; gameIndex < bestOf; gameIndex++) {
+            const gameColIndex = gameColsStart + gameIndex;
+            const gameColLetter = this.getColumnLetter(gameColIndex);
+            
+            currentPlayerGameRefs.push(`${gameColLetter}${currentPlayerRow}`);
+            otherPlayerGameRefs.push(`${gameColLetter}${otherPlayerRow}`);
+          }
+
+          // Build the Loss T formula
+          // Logic: Only show result if this player is the loser (score ≠ maxScore) and other player is winner (score = maxScore)
+          // and all game cells for both players are not blank
+          
+          // Check that all game cells are not blank
+          const allGamesCellsCheck = [
+            ...currentPlayerGameRefs.map(ref => `${ref}<>""`),
+            ...otherPlayerGameRefs.map(ref => `${ref}<>""`)
+          ].join(',');
+
+          // Build the sum of losing scores
+          const losingSumParts = [];
+          for (let gameIndex = 0; gameIndex < bestOf; gameIndex++) {
+            const currentRef = currentPlayerGameRefs[gameIndex];
+            const otherRef = otherPlayerGameRefs[gameIndex];
+            
+            // Add current player's game score if it's less than other player's game score
+            losingSumParts.push(`IF(${currentRef}<${otherRef},${currentRef},0)`);
+          }
+          const losingSumFormula = losingSumParts.join('+');
+
+          // Complete Loss T formula
+          const lossTFormula = `=IF(AND(${scoreColLetter}${currentPlayerRow}<>${maxScore},${scoreColLetter}${otherPlayerRow}=${maxScore},${allGamesCellsCheck}),${losingSumFormula},"")`;
+
+          // Add Loss T formula request
+          requests.push({
+            updateCells: {
+              rows: [{
+                values: [{
+                  userEnteredValue: { formulaValue: lossTFormula }
+                }]
+              }],
+              fields: "userEnteredValue.formulaValue",
+              start: {
+                sheetId: sheetId,
+                rowIndex: currentPlayerRow - 1, // Convert to 0-indexed
+                columnIndex: lossTCol
+              }
+            }
+          });
+
+          console.log(`📊 R${roundIndex + 1}M${matchIndex + 1}P${playerIndex + 1} Loss T formula → ${lossTColLetter}${currentPlayerRow}`);
+        }
+      }
+    }
+
+    // Apply all Loss T formulas
+    if (requests.length > 0) {
+      await this.sheetsService.batchUpdate(spreadsheetId, requests);
+      console.log(`✅ Applied ${requests.length} Loss T formulas`);
+    }
+  }
+
+  /**
+   * Get advancement mappings for a round transition
+   * @param {Object} currentRound - Current round data
+   * @param {Object} nextRound - Next round data
+   * @param {number} roundIndex - Current round index
+   * @param {number} nextRoundIndex - Next round index
+   * @returns {Array} Array of advancement mappings
+   */
+  getAdvancementMappings(currentRound, nextRound, roundIndex, nextRoundIndex) {
+    const mappings = [];
+
+    if (roundIndex === 0) {
+      // Round 1 → Round 2: Smart mapping that handles bye structure dynamically
+      return this.getSmartRound1ToRound2Mappings(currentRound, nextRound);
+    } else {
+      // Standard advancement: every 2 matches from current round feed 1 match in next round
+      for (let nextMatchIndex = 0; nextMatchIndex < nextRound.matches.length; nextMatchIndex++) {
+        const sourceMatch1Index = nextMatchIndex * 2;
+        const sourceMatch2Index = nextMatchIndex * 2 + 1;
+
+        // First source match winner goes to position 1
+        if (sourceMatch1Index < currentRound.matches.length) {
+          mappings.push({
+            sourceMatchIndex: sourceMatch1Index,
+            destMatchIndex: nextMatchIndex,
+            destPlayerIndex: 0 // Position 1 (0-indexed)
+          });
+        }
+
+        // Second source match winner goes to position 2
+        if (sourceMatch2Index < currentRound.matches.length) {
+          mappings.push({
+            sourceMatchIndex: sourceMatch2Index,
+            destMatchIndex: nextMatchIndex,
+            destPlayerIndex: 1 // Position 2 (0-indexed)
+          });
+        }
+      }
+    }
+
+    return mappings;
+  }
+
+  /**
+   * Smart mapping for Round 1 → Round 2 that analyzes the bracket structure dynamically
+   * @param {Object} round1 - Round 1 data
+   * @param {Object} round2 - Round 2 data
+   * @returns {Array} Array of advancement mappings
+   */
+  getSmartRound1ToRound2Mappings(round1, round2) {
+    const mappings = [];
+    let r1MatchIndex = 0; // Track which Round 1 match to assign next
+
+    // Analyze Round 2 matches to determine where Round 1 winners should go
+    for (let r2MatchIndex = 0; r2MatchIndex < round2.matches.length; r2MatchIndex++) {
+      const r2Match = round2.matches[r2MatchIndex];
+      
+      // Check each position in the Round 2 match
+      for (let positionIndex = 0; positionIndex < 2; positionIndex++) {
+        const position = positionIndex === 0 ? r2Match.position1 : r2Match.position2;
+        
+        // A position should get a Round 1 winner if:
+        // 1. It's null/undefined, OR
+        // 2. It exists but has no seed (seed is null/undefined)
+        // Positions with seed data are byes and should be left alone
+        const shouldGetR1Winner = !position || !position.seed;
+        
+        if (shouldGetR1Winner && r1MatchIndex < round1.matches.length) {
+          // Assign the next available Round 1 match to this position
+          mappings.push({
+            sourceMatchIndex: r1MatchIndex,
+            destMatchIndex: r2MatchIndex,
+            destPlayerIndex: positionIndex
+          });
+          r1MatchIndex++; // Move to next Round 1 match
+        }
+        
+        // If we've used all Round 1 matches, stop creating mappings
+        if (r1MatchIndex >= round1.matches.length) break;
+      }
+      
+      // If we've used all Round 1 matches, stop processing
+      if (r1MatchIndex >= round1.matches.length) break;
+    }
+
+    return mappings;
+  }
+
+  /**
+   * Convert column index to Excel column letter
+   * @param {number} index - 0-based column index
+   * @returns {string} Excel column letter
+   */
+  getColumnLetter(index) {
+    let result = '';
+    while (index >= 0) {
+      result = String.fromCharCode(65 + (index % 26)) + result;
+      index = Math.floor(index / 26) - 1;
+    }
+    return result;
   }
 }
 
