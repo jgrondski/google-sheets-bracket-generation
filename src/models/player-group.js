@@ -55,18 +55,10 @@ class PlayerGroup {
       });
     }
 
-    // Update values & formatting
-    // Only set numberValue for valid numbers, otherwise use stringValue
-
-    const seedCell = Number.isFinite(this.seed)
-      ? { userEnteredValue: { numberValue: this.seed } }
-      : { userEnteredValue: { stringValue: "" } };
-
-    const nameCell = { userEnteredValue: { stringValue: this.name || "" } };
-
-    const scoreCell = Number.isFinite(this.score)
-      ? { userEnteredValue: { numberValue: this.score } }
-      : { userEnteredValue: { stringValue: "" } };
+    // Update values & formatting using provided value objects (can be stringValue, numberValue, or formulaValue)
+    const seedCell = { userEnteredValue: seedValue || { stringValue: "" } };
+    const nameCell = { userEnteredValue: nameValue || { stringValue: "" } };
+    const scoreCell = { userEnteredValue: scoreValue || { stringValue: "" } };
 
     // Add formatting to each cell
     seedCell.userEnteredFormat = CELL_FORMATS.seed;

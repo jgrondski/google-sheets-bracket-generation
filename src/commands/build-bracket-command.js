@@ -132,7 +132,9 @@ class BuildBracketCommand {
           spreadsheet.spreadsheetId,
           layout,
           0,
-          colorScheme
+          colorScheme,
+          config,
+          "gold"
         );
       }
 
@@ -186,7 +188,9 @@ class BuildBracketCommand {
         spreadsheet.spreadsheetId,
         layout,
         sheetInfo.sheetId,
-        colorScheme
+        colorScheme,
+        config,
+        bracketType
       );
 
       console.log(
