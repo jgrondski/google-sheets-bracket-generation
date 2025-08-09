@@ -108,15 +108,24 @@ Before getting started, make sure you have:
 
 ## Google API Setup
 
-### Step 1: Enable Google APIs
+### Step 1: Create Google Cloud Project
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing project
-3. Enable these APIs:
+2. **Create a new project**:
+   - Click the project dropdown at the top (next to "Google Cloud")
+   - Click "NEW PROJECT"
+   - Enter a project name (e.g., "Tournament Brackets")
+   - Click "CREATE"
+   - Wait for the project to be created and make sure it's selected
+
+### Step 2: Enable Google APIs
+
+1. In your Google Cloud project, go to **APIs & Services > Library**
+2. Search for and enable these APIs (click each, then click "ENABLE"):
    - **Google Sheets API**
    - **Google Drive API**
 
-### Step 2: Create OAuth Credentials
+### Step 3: Create OAuth Credentials
 
 1. Go to **APIs & Services > Credentials**
 2. Click **+ CREATE CREDENTIALS > OAuth client ID**
@@ -136,7 +145,7 @@ Your `oauth-credentials.json` should look like this:
 }
 ```
 
-### Step 3: First Run Authentication
+### Step 4: First Run Authentication
 
 The first time you run `npm start`, you'll be prompted to:
 
@@ -156,6 +165,31 @@ https://localhost/?code=4/0AX4XfWjabc123def456ghi789&scope=https://www.googleapi
 You would copy: `4/0AX4XfWjab123def456ghi789`
 
 This creates a `token.json` file that stores your authentication - **keep this file secure and don't share it**.
+
+### Optional: Environment Configuration (.env file)
+
+You can create a `.env` file in your project root to customize file paths and specify where your brackets are saved in Google Drive:
+
+```env
+TARGET_FOLDER_ID=your_google_drive_folder_id_here
+CREDENTIALS_PATH=./oauth-credentials.json
+TOKEN_PATH=./token.json
+```
+
+**Environment Variables:**
+
+- **`TARGET_FOLDER_ID`** (optional) - Google Drive folder ID where brackets will be saved
+  - If not set, brackets are created in the root of your Google Drive
+  - To find your folder ID: Go to Google Drive → Open the desired folder → Copy the ID from the URL
+  - Example: `https://drive.google.com/drive/folders/1ABC123def456GHI789` → Use `1ABC123def456GHI789`
+
+- **`CREDENTIALS_PATH`** (optional) - Path to your OAuth credentials file
+  - Default: `./oauth-credentials.json` (project root)
+  - Only change if you want to store credentials elsewhere
+
+- **`TOKEN_PATH`** (optional) - Path to your authentication token file  
+  - Default: `./token.json` (project root)
+  - Only change if you want to store the token elsewhere
 
 ## Tournament Configuration
 
