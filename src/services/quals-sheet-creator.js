@@ -146,7 +146,7 @@ class QualsSheetCreator {
           ],
           start: { sheetId, rowIndex: 0, columnIndex: 0 },
           fields:
-            'userEnteredValue,userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)',
+            'userEnteredValue,userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment)',
         },
       },
       // Empty row 2 (8px height, all gray background)
@@ -238,7 +238,7 @@ class QualsSheetCreator {
         rows: playerRows,
         start: { sheetId, rowIndex: 2, columnIndex: 0 }, // Start at row 3 (index 2) because of header + empty row
         fields:
-          'userEnteredValue,userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)',
+          'userEnteredValue,userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment)',
       },
     });
 

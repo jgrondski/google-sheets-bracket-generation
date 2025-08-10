@@ -48,7 +48,7 @@ const DIMENSIONS = {
   columnWidths: {
     edge: 16,
     seed: 64,
-    mainName: 336,
+    mainName: 450,
     otherName: 168,
     connector: 28,
   },

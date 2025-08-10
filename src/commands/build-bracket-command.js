@@ -157,8 +157,6 @@ class BuildBracketCommand {
     console.log(`📐 Rendering ${bracketTypes.length} brackets to separate sheets...`);
 
     for (const bracketType of bracketTypes) {
-      console.log(`🎨 Rendering ${bracketType} bracket...`);
-
       const tournament = multiBracketTournament.getBracket(bracketType);
       const layout = new BracketLayout(tournament);
       const sheetInfo = spreadsheet.sheets[bracketType];
