@@ -4,7 +4,9 @@
  * Shared sheet layout helpers for Match sheets (and Bracket references)
  */
 export function getColumnsPerRound(config, bracketType = null) {
-  const bestOf = config.getBestOf(bracketType);
+  const bestOf = config.getMaxBestOf
+    ? config.getMaxBestOf(bracketType)
+    : config.getBestOf(bracketType);
   // Match + Seed + Username + Score + Game columns + Loss T + spacer
   return 4 + bestOf + 1 + 1;
 }

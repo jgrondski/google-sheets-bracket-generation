@@ -25,7 +25,9 @@ class BracketRenderer {
 
   // Must mirror MatchSheetCreator.getColumnsPerRound
   getMatchSheetColumnsPerRound(config, bracketType = null) {
-    const bestOf = config.getBestOf ? config.getBestOf(bracketType) : config.getBestOf();
+    const bestOf = config.getMaxBestOf
+      ? config.getMaxBestOf(bracketType)
+      : config.getBestOf(bracketType);
     // Match + Seed + Username + Score + Game1..N + Loss T + Spacer
     return 4 + bestOf + 1 + 1;
   }

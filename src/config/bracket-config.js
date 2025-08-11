@@ -59,6 +59,59 @@ class BracketConfig {
   }
 
   /**
+   * Get optional playersRemaining rule for a bracket type
+   * Shape: { bestOf: string|number, untilPlayersRemaining: string|number }
+   */
+  getPlayersRemainingRule(bracketType = null) {
+    const bracketConfig = bracketType
+      ? this.getBracketConfigByType(bracketType)
+      : this.getBracketConfig();
+    const rule = bracketConfig?.playersRemaining;
+    if (!rule || typeof rule !== 'object') return null;
+    const bestOf = parseInt(rule.bestOf, 10);
+    const untilPlayersRemaining = parseInt(rule.untilPlayersRemaining, 10);
+    if (!bestOf || !untilPlayersRemaining) return null;
+    return { bestOf, untilPlayersRemaining };
+  }
+
+  /**
+   * Max bestOf used for layout (keeps column geometry stable across rounds)
+   */
+  getMaxBestOf(bracketType = null) {
+    const base = this.getBestOf(bracketType);
+    const rule = this.getPlayersRemainingRule(bracketType);
+    if (!rule) return base;
+    return Math.max(base, rule.bestOf);
+  }
+
+  /**
+   * Get per-round bestOf using playersRemaining rule when applicable
+   * @param {string|null} bracketType
+   * @param {number} roundIndex - 0-based (0 is round of actual bracket size)
+   * @param {number} numRounds - total rounds up to finals (round with 2 players)
+   */
+  getRoundBestOf(bracketType = null, roundIndex = 0, numRounds = 1) {
+    const rule = this.getPlayersRemainingRule(bracketType);
+    if (!rule) return this.getBestOf(bracketType);
+
+    // Players remaining this round: 2^(numRounds - roundIndex)
+    // Example: numRounds=5 -> r0:32, r1:16, r2:8, r3:4, r4:2
+    const playersRemaining = Math.pow(2, Math.max(0, numRounds - roundIndex));
+    if (playersRemaining > rule.untilPlayersRemaining) {
+      return rule.bestOf;
+    }
+    return this.getBestOf(bracketType);
+  }
+
+  /**
+   * Get per-round required max score (wins needed)
+   */
+  getRoundMaxScore(bracketType = null, roundIndex = 0, numRounds = 1) {
+    const bo = this.getRoundBestOf(bracketType, roundIndex, numRounds);
+    return Math.ceil(bo / 2);
+  }
+
+  /**
    * Get maximum score for winning a match
    * @param {string} bracketType - 'gold' or 'silver' (optional, defaults to current bracket)
    * @returns {number} Score needed to win (bestOf/2 rounded up)

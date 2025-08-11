@@ -239,7 +239,9 @@ class MatchSheetCreator {
    * @returns {Array} Array of requests
    */
   createHeaderRequests(sheetId, config, numRounds, bracketType) {
-    const bestOf = config.getBestOf(bracketType);
+    const bestOf = config.getMaxBestOf
+      ? config.getMaxBestOf(bracketType)
+      : config.getBestOf(bracketType);
     const baseHeaders = ['Match', 'Seed', 'Username'];
 
     // Add game columns based on bestOf
@@ -478,8 +480,9 @@ class MatchSheetCreator {
   async applyMatchSheetFormatting(spreadsheetId, sheetId, matchData, config, bracketType = null) {
     const requests = [];
     const columnsPerRound = this.getColumnsPerRound(config, bracketType);
-    const maxScore = config.getMaxScore(bracketType);
-    const bestOf = config.getBestOf(bracketType);
+    const bestOfLayout = config.getMaxBestOf
+      ? config.getMaxBestOf(bracketType)
+      : config.getBestOf(bracketType);
 
     // Define colors using proper hex values converted to RGB decimals
     const lightBlue3 = { red: 0.812, green: 0.886, blue: 0.953 }; // #cfe2f3 (207/255, 226/255, 243/255)
@@ -500,8 +503,8 @@ class MatchSheetCreator {
       40, // Score (D)
     ];
 
-    // Add Game columns
-    for (let i = 0; i < bestOf; i++) {
+    // Add Game columns (layout maximum)
+    for (let i = 0; i < bestOfLayout; i++) {
       columnWidths.push(65); // Game columns
     }
 
@@ -538,7 +541,10 @@ class MatchSheetCreator {
       const roundData = matchData.rounds[round];
       const scoreColumnIndex = round * columnsPerRound + 3; // Score is 4th column (index 3)
 
-      // Create dropdown values from maxScore to 0 (reverse sorted)
+      // Create dropdown values from per-round maxScore to 0 (reverse sorted)
+      const maxScore = config.getRoundMaxScore
+        ? config.getRoundMaxScore(bracketType, round, matchData.numRounds)
+        : config.getMaxScore(bracketType);
       const dropdownValues = [];
       for (let i = maxScore; i >= 0; i--) {
         dropdownValues.push({ userEnteredValue: i.toString() });
@@ -661,13 +667,15 @@ class MatchSheetCreator {
   ) {
     const requests = [];
     const columnsPerRound = this.getColumnsPerRound(config, bracketType);
-    const bestOf = config.getBestOf(bracketType);
+    const bestOfLayout = config.getMaxBestOf
+      ? config.getMaxBestOf(bracketType)
+      : config.getBestOf(bracketType);
 
     for (let round = 0; round < matchData.numRounds; round++) {
       const startCol = round * columnsPerRound;
       const gameColsStart = startCol + 4; // Game columns start after Match, Seed, Username, Score
-      const gameColsEnd = gameColsStart + bestOf; // Game columns end
-      const lossTCol = startCol + 4 + bestOf; // Loss T column is after Score + Game columns
+      const gameColsEnd = gameColsStart + bestOfLayout; // Game columns end
+      const lossTCol = startCol + 4 + bestOfLayout; // Loss T column is after Score + Game columns
 
       // Apply to Game columns (Game 1, Game 2, etc.)
       for (let gameCol = gameColsStart; gameCol < gameColsEnd; gameCol++) {
@@ -782,7 +790,9 @@ class MatchSheetCreator {
     black
   ) {
     const columnsPerRound = this.getColumnsPerRound(config, bracketType);
-    const bestOf = config.getBestOf(bracketType);
+    const bestOfLayout = config.getMaxBestOf
+      ? config.getMaxBestOf(bracketType)
+      : config.getBestOf(bracketType);
     const white = { red: 1.0, green: 1.0, blue: 1.0 };
 
     // Calculate data boundaries for each round
@@ -794,7 +804,9 @@ class MatchSheetCreator {
       sheetId,
       matchData,
       columnsPerRound,
-      bestOf,
+      bestOfLayout,
+      config,
+      bracketType,
       roundDataBoundaries,
       lightBlue3,
       lightYellow3,
@@ -857,6 +869,8 @@ class MatchSheetCreator {
     matchData,
     columnsPerRound,
     bestOf,
+    config,
+    bracketType,
     boundaries,
     lightBlue3,
     lightYellow3,
@@ -872,8 +886,14 @@ class MatchSheetCreator {
       const usernameCol = startCol + 2; // Username column
       const scoreCol = startCol + 3; // Score column
       const gameColsStart = startCol + 4; // Game columns start
-      const gameColsEnd = gameColsStart + bestOf; // Game columns end
+      const gameColsEnd = gameColsStart + bestOf; // Game columns end (layout max)
       const lossTCol = startCol + 4 + bestOf; // Loss T column
+      const seedCol = startCol + 1; // Seed column
+
+      // Determine per-round game count (for coloring relevant vs irrelevant)
+      const roundBestOf = config.getRoundBestOf
+        ? config.getRoundBestOf(bracketType, roundIndex, matchData.numRounds)
+        : bestOf;
 
       // Apply grey background to all data columns first (Match + Seed columns)
       requests.push({
@@ -909,6 +929,23 @@ class MatchSheetCreator {
         },
       });
 
+      // Apply blue background to Seed column (same logic as Username, one column left)
+      requests.push({
+        repeatCell: {
+          range: {
+            sheetId: sheetId,
+            startRowIndex: 1,
+            endRowIndex: boundary.lastDataRow,
+            startColumnIndex: seedCol,
+            endColumnIndex: seedCol + 1,
+          },
+          cell: {
+            userEnteredFormat: { backgroundColor: lightBlue3 },
+          },
+          fields: 'userEnteredFormat.backgroundColor',
+        },
+      });
+
       // Apply yellow background to Score column
       requests.push({
         repeatCell: {
@@ -926,7 +963,8 @@ class MatchSheetCreator {
         },
       });
 
-      // Apply yellow background to Game columns
+      // Apply yellow background to relevant Game columns (per-round bestOf)
+      const relevantEnd = gameColsStart + roundBestOf;
       requests.push({
         repeatCell: {
           range: {
@@ -934,7 +972,7 @@ class MatchSheetCreator {
             startRowIndex: 1,
             endRowIndex: boundary.lastDataRow,
             startColumnIndex: gameColsStart,
-            endColumnIndex: gameColsEnd,
+            endColumnIndex: relevantEnd,
           },
           cell: {
             userEnteredFormat: { backgroundColor: lightYellow3 },
@@ -942,6 +980,25 @@ class MatchSheetCreator {
           fields: 'userEnteredFormat.backgroundColor',
         },
       });
+
+      // Grey out irrelevant Game columns (beyond per-round bestOf up to layout max)
+      if (relevantEnd < gameColsEnd) {
+        requests.push({
+          repeatCell: {
+            range: {
+              sheetId: sheetId,
+              startRowIndex: 1,
+              endRowIndex: boundary.lastDataRow,
+              startColumnIndex: relevantEnd,
+              endColumnIndex: gameColsEnd,
+            },
+            cell: {
+              userEnteredFormat: { backgroundColor: lightGrey1 },
+            },
+            fields: 'userEnteredFormat.backgroundColor',
+          },
+        });
+      }
 
       // Apply blue background to Loss T column
       requests.push({
@@ -1132,10 +1189,13 @@ class MatchSheetCreator {
   ) {
     const requests = [];
     const columnsPerRound = this.getColumnsPerRound(config, bracketType);
-    const maxScore = config.getMaxScore(bracketType);
+    // maxScore is per-round now when playersRemaining is set
 
     // Process each round to create advancement formulas for the next round
     for (let roundIndex = 0; roundIndex < matchData.numRounds - 1; roundIndex++) {
+      const maxScore = config.getRoundMaxScore
+        ? config.getRoundMaxScore(bracketType, roundIndex, matchData.numRounds)
+        : config.getMaxScore(bracketType);
       const currentRound = matchData.rounds[roundIndex];
       const nextRoundIndex = roundIndex + 1;
       const nextRound = matchData.rounds[nextRoundIndex];
@@ -1238,8 +1298,9 @@ class MatchSheetCreator {
   async applyLossTFormulas(spreadsheetId, sheetId, matchData, config, bracketType = null) {
     const requests = [];
     const columnsPerRound = this.getColumnsPerRound(config, bracketType);
-    const maxScore = config.getMaxScore(bracketType);
-    const bestOf = config.getBestOf(bracketType);
+    const bestOfLayout = config.getMaxBestOf
+      ? config.getMaxBestOf(bracketType)
+      : config.getBestOf(bracketType);
 
     for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
       const round = matchData.rounds[roundIndex];
@@ -1257,7 +1318,7 @@ class MatchSheetCreator {
 
         const scoreCol = startColumn + 3; // Score column
         const gameColsStart = startColumn + 4; // Game columns start
-        const lossTCol = startColumn + 4 + bestOf; // Loss T column
+        const lossTCol = startColumn + 4 + bestOfLayout; // Loss T column
 
         // Convert to Excel letters
         const scoreColLetter = this.getColumnLetter(scoreCol);
@@ -1271,7 +1332,10 @@ class MatchSheetCreator {
           const currentPlayerGameRefs = [];
           const otherPlayerGameRefs = [];
 
-          for (let gameIndex = 0; gameIndex < bestOf; gameIndex++) {
+          const roundBestOf = config.getRoundBestOf
+            ? config.getRoundBestOf(bracketType, roundIndex, matchData.numRounds)
+            : config.getBestOf(bracketType);
+          for (let gameIndex = 0; gameIndex < roundBestOf; gameIndex++) {
             const gameColIndex = gameColsStart + gameIndex;
             const gameColLetter = this.getColumnLetter(gameColIndex);
 
@@ -1291,7 +1355,7 @@ class MatchSheetCreator {
 
           // Build the sum of losing scores
           const losingSumParts = [];
-          for (let gameIndex = 0; gameIndex < bestOf; gameIndex++) {
+          for (let gameIndex = 0; gameIndex < roundBestOf; gameIndex++) {
             const currentRef = currentPlayerGameRefs[gameIndex];
             const otherRef = otherPlayerGameRefs[gameIndex];
 
@@ -1301,6 +1365,9 @@ class MatchSheetCreator {
           const losingSumFormula = losingSumParts.join('+');
 
           // Complete Loss T formula
+          const maxScore = config.getRoundMaxScore
+            ? config.getRoundMaxScore(bracketType, roundIndex, matchData.numRounds)
+            : config.getMaxScore(bracketType);
           const lossTFormula = `=IF(AND(${scoreColLetter}${currentPlayerRow}<>${maxScore},${scoreColLetter}${otherPlayerRow}=${maxScore},${allGamesCellsCheck}),${losingSumFormula},"")`;
 
           // Add Loss T formula request
