@@ -1,0 +1,29 @@
+{
+  "_comment": "Demonstrates per-round best-of with shifting columns per round.",
+  "options": {
+    "sheetName": "Per-Round BestOf Demo",
+    "gold": {
+      "bracketSize": "16",
+      "bracketType": "standard",
+      "bracketName": "Gold Bracket",
+      "bestOf": "5",
+      "playersRemaining": [
+        { "untilPlayersRemaining": 8, "bestOf": 3 },
+        { "untilPlayersRemaining": 4, "bestOf": 5 },
+        { "untilPlayersRemaining": 2, "bestOf": 7 }
+      ]
+    },
+    "colors": {
+      "primary": "#1a73e8",
+      "secondary": "#fbbc05",
+      "accent": "#34a853",
+      "text": "#202124"
+    }
+  },
+  "players": [
+    { "name": "P1" }, { "name": "P2" }, { "name": "P3" }, { "name": "P4" },
+    { "name": "P5" }, { "name": "P6" }, { "name": "P7" }, { "name": "P8" },
+    { "name": "P9" }, { "name": "P10" }, { "name": "P11" }, { "name": "P12" },
+    { "name": "P13" }, { "name": "P14" }, { "name": "P15" }, { "name": "P16" }
+  ]
+}

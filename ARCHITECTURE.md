@@ -1,4 +1,4 @@
-# Architecture Refactor
+# Architecture
 
 This directory contains the refactored, modular architecture for the bracket generation system using ES6 modules.
 

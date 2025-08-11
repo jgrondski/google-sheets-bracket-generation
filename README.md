@@ -220,6 +220,7 @@ This creates `bracket-data.json` automatically with all your players in the corr
 
 - `bracket-data-example.json` - Simple 8-player single bracket
 - `bracket-data-multi-example.json` - Multi-bracket with gold/silver + custom colors
+- `examples/per-round-bestof-example.json` - Demonstrates per-round best-of using playersRemaining
 
 ### For Small Player Lists (Manual Editing)
 
@@ -258,13 +259,15 @@ This creates `bracket-data.json` automatically with all your players in the corr
       "bracketSize": "16",
       "bracketType": "standard",
       "bracketName": "Championship Bracket",
-      "colorScheme": "#FFD700"
+      "colorScheme": "#FFD700",
+      "bestOf": 5
     },
     "silver": {
       "bracketSize": "16",
       "bracketType": "standard",
       "bracketName": "Consolation Bracket",
-      "colorScheme": "#C0C0C0"
+      "colorScheme": "#C0C0C0",
+      "bestOf": 3
     }
   },
   "players": [
@@ -276,6 +279,36 @@ This creates `bracket-data.json` automatically with all your players in the corr
   ]
 }
 ```
+
+### Per-round Best-of (Adaptive rounds)
+
+You can vary the number of games per round using `playersRemaining`. Earlier rounds can be shorter, later rounds longer. If omitted, `bestOf` is used for all rounds.
+
+```json
+{
+  "options": {
+    "sheetName": "Adaptive Rounds Example",
+    "gold": {
+      "bracketSize": "16",
+      "bracketType": "standard",
+      "bracketName": "Main Bracket",
+      "bestOf": "5",
+      "playersRemaining": [
+        { "untilPlayersRemaining": 8, "bestOf": 3 },
+        { "untilPlayersRemaining": 4, "bestOf": 5 },
+        { "untilPlayersRemaining": 2, "bestOf": 7 }
+      ]
+    }
+  },
+  "players": [{ "name": "Player 1" }, { "name": "Player 2" }]
+}
+```
+
+Notes:
+
+- Match sheets only render the exact number of game columns per round (no “extra” games). Columns shift left round-by-round.
+- Bracket cells pull values from the match sheet using simple references; merged cells are written to the top-left only.
+- Champion is determined from the final match by the winner reaching the configured max score for that round.
 
 ### Configuration Options
 
