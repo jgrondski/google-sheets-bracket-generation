@@ -4,7 +4,8 @@ import { GoogleSheetsService } from './google-sheets-service.js';
 import { RequestBuilder } from '../factories/request-builder.js';
 import PlayerGroup from '../models/player-group.js';
 import { getPosition } from '../utils/math-utils.js';
-import { matchCellRef, winnerIfMaxScore } from '../formulas/index.js';
+import { matchCellRefAtStartCol, winnerIfMaxScore } from '../formulas/index.js';
+import { getRoundStartColumns } from '../utils/sheet-layout.js';
 
 /**
  * Service for rendering bracket layouts to Google Sheets
@@ -23,12 +24,11 @@ class BracketRenderer {
     return `${bracketName.split(' ')[0]} Matches`;
   }
 
-  // Must mirror MatchSheetCreator.getColumnsPerRound
+  // Deprecated: previously used constant columns per round
   getMatchSheetColumnsPerRound(config, bracketType = null) {
     const bestOf = config.getMaxBestOf
       ? config.getMaxBestOf(bracketType)
       : config.getBestOf(bracketType);
-    // Match + Seed + Username + Score + Game1..N + Loss T + Spacer
     return 4 + bestOf + 1 + 1;
   }
 
@@ -36,15 +36,10 @@ class BracketRenderer {
   // field: "seed" | "username" | "score"
   getMatchSheetRefA1(config, bracketType, roundIndex, matchIndex, playerIndex, field) {
     const sheet = this.getMatchesSheetName(config, bracketType);
-    const colsPerRound = this.getMatchSheetColumnsPerRound(config, bracketType);
-    return matchCellRef({
-      sheet,
-      colsPerRound,
-      roundIndex,
-      matchIndex,
-      playerIndex,
-      field,
-    });
+    const startCol0 = Array.isArray(this._roundStartCols)
+      ? this._roundStartCols[roundIndex]
+      : roundIndex * this.getMatchSheetColumnsPerRound(config, bracketType);
+    return matchCellRefAtStartCol({ sheet, startCol0, matchIndex, playerIndex, field });
   }
 
   /**
@@ -73,6 +68,11 @@ class BracketRenderer {
     bracketType = 'gold'
   ) {
     const requests = [];
+
+    // Cache per-round start columns for Matches sheet references (variable per-round geometry)
+    if (config) {
+      this._roundStartCols = getRoundStartColumns(config, bracketType, layout.getLastRoundIndex());
+    }
 
     // 1. Setup column count first
     const bounds = layout.calculateGridBounds();
@@ -330,11 +330,15 @@ class BracketRenderer {
 
     // Compute final round references from Matches sheet
     const finalRoundIndex = layout.getLastRoundIndex() - 1; // last actual round before champion
-    const colsPerRound = this.getMatchSheetColumnsPerRound(config, bracketType);
-    const startCol0 = finalRoundIndex * colsPerRound;
+    const starts = Array.isArray(this._roundStartCols)
+      ? this._roundStartCols
+      : getRoundStartColumns(config, bracketType, layout.getLastRoundIndex());
+    const startCol0 = starts[finalRoundIndex];
 
     const sheet = this.getMatchesSheetName(config, bracketType);
-    const maxScore = config.getMaxScore(bracketType);
+    const maxScore = config.getRoundMaxScore
+      ? config.getRoundMaxScore(bracketType, finalRoundIndex, layout.getLastRoundIndex())
+      : config.getMaxScore(bracketType);
 
     const seedFormula = winnerIfMaxScore({
       sheet,

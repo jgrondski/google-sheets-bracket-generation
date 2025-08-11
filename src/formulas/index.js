@@ -29,3 +29,13 @@ export function matchCellRef({ sheet, colsPerRound, roundIndex, matchIndex, play
   const row = 2 + matchIndex * 3 + playerIndex; // 1-based
   return `='${sheet}'!${colA1}${row}`;
 }
+
+/**
+ * Build direct reference when you already know the round's starting column (0-based)
+ */
+export function matchCellRefAtStartCol({ sheet, startCol0, matchIndex, playerIndex, field }) {
+  const fieldOffset = field === 'seed' ? 1 : field === 'username' ? 2 : 3; // score
+  const colA1 = colToA1(startCol0 + fieldOffset);
+  const row = 2 + matchIndex * 3 + playerIndex; // 1-based
+  return `='${sheet}'!${colA1}${row}`;
+}

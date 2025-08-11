@@ -19,3 +19,21 @@ export function getMatchSheetColumnWidths(bestOf) {
   widths.push(50); // Spacer
   return widths;
 }
+
+// New: per-round variable geometry helpers
+export function getRoundTotalCols(config, bracketType = null, roundIndex = 0, numRounds = 1) {
+  const roundBestOf = config.getRoundBestOf
+    ? config.getRoundBestOf(bracketType, roundIndex, numRounds)
+    : config.getBestOf(bracketType);
+  return 4 + roundBestOf + 1 + 1; // Match, Seed, Username, Score, Games, Loss T, Spacer
+}
+
+export function getRoundStartColumns(config, bracketType = null, numRounds = 1) {
+  const starts = [];
+  let offset = 0;
+  for (let r = 0; r < numRounds; r++) {
+    starts.push(offset);
+    offset += getRoundTotalCols(config, bracketType, r, numRounds);
+  }
+  return starts;
+}

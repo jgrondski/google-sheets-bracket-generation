@@ -1,7 +1,11 @@
 // ==================== src/services/match-sheet-creator.js ====================
 
 import { GoogleSheetsService } from './google-sheets-service.js';
-import { getColumnsPerRound as getColumnsPerRoundUtil } from '../utils/sheet-layout.js';
+import {
+  getColumnsPerRound as getColumnsPerRoundUtil,
+  getRoundStartColumns,
+  getRoundTotalCols,
+} from '../utils/sheet-layout.js';
 
 /**
  * Service for creating interactive match tracking sheets
@@ -25,10 +29,13 @@ class MatchSheetCreator {
 
     console.log(`🎯 Creating match tracking sheet: ${sheetName}`);
 
-    // Calculate required columns based on bestOf and number of rounds
-    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
+    // Calculate required columns per round (variable by round)
     const maxRounds = tournament.getBracket().numRounds;
-    const columnCount = columnsPerRound * maxRounds + 10; // Add buffer
+    let columnCount = 0;
+    for (let r = 0; r < maxRounds; r++) {
+      columnCount += getRoundTotalCols(config, bracketType, r, maxRounds);
+    }
+    columnCount += 5; // small buffer
 
     // Create the sheet with enough columns
     const sheetId = await this.sheetsService.addSheet(
@@ -42,7 +49,14 @@ class MatchSheetCreator {
     const matchData = this.generateMatchData(tournament, bracketType);
 
     // Create the match sheet content
-    await this.renderMatchSheet(spreadsheetId, sheetId, matchData, sheetName, config);
+    await this.renderMatchSheet(
+      spreadsheetId,
+      sheetId,
+      matchData,
+      sheetName,
+      config,
+      bracketType
+    );
 
     console.log(`✅ Match tracking sheet created: ${sheetName}`);
 
@@ -70,11 +84,14 @@ class MatchSheetCreator {
 
       console.log(`🎯 Creating match tracking sheet: ${sheetName}`);
 
-      // Calculate required columns based on bestOf and number of rounds
+      // Calculate required columns per round (variable by round)
       const bracketTournament = multiBracketTournament.getBracket(bracketType);
-      const columnsPerRound = this.getColumnsPerRound(config, bracketType);
       const maxRounds = bracketTournament.getBracket().numRounds;
-      const columnCount = columnsPerRound * maxRounds + 10; // Add buffer
+      let columnCount = 0;
+      for (let r = 0; r < maxRounds; r++) {
+        columnCount += getRoundTotalCols(config, bracketType, r, maxRounds);
+      }
+      columnCount += 5; // small buffer
 
       // Create the sheet with enough columns
       const sheetId = await this.sheetsService.addSheet(
@@ -176,27 +193,24 @@ class MatchSheetCreator {
   async renderMatchSheet(spreadsheetId, sheetId, matchData, sheetName, config, bracketType = null) {
     const requests = [];
 
-    // Create the headers
+    // Create the headers (per round, variable game count)
     requests.push(...this.createHeaderRequests(sheetId, config, matchData.numRounds, bracketType));
 
     // Render each round
-    let startColumn = 0; // Column A = 0
-
-    for (const round of matchData.rounds) {
+  const startCols = getRoundStartColumns(config, bracketType, matchData.numRounds);
+  for (let r = 0; r < matchData.rounds.length; r++) {
+      const round = matchData.rounds[r];
+      const startColumn = startCols[r];
       requests.push(
         ...this.createRoundRequests(
           sheetId,
           round,
           startColumn,
-          matchData.bracketType,
-          config,
-          bracketType
+      getRoundTotalCols(config, bracketType, r, matchData.numRounds),
+      bracketType,
+      config
         )
       );
-
-      // Calculate columns per round based on bestOf setting
-      const columnsPerRound = this.getColumnsPerRound(config, bracketType);
-      startColumn += columnsPerRound;
     }
 
     // Apply the requests
@@ -239,25 +253,16 @@ class MatchSheetCreator {
    * @returns {Array} Array of requests
    */
   createHeaderRequests(sheetId, config, numRounds, bracketType) {
-    const bestOf = config.getMaxBestOf
-      ? config.getMaxBestOf(bracketType)
-      : config.getBestOf(bracketType);
     const baseHeaders = ['Match', 'Seed', 'Username'];
-
-    // Add game columns based on bestOf
-    const gameHeaders = [];
-    for (let i = 1; i <= bestOf; i++) {
-      gameHeaders.push(`Game ${i}`);
-    }
-
-    // Complete header set for one round: Match, Seed, Username, Score, Game1-N, Loss T, Spacer
-    const headers = [...baseHeaders, 'Score', ...gameHeaders, 'Loss T', '']; // "" is spacer column
-
-    // Use actual number of rounds from tournament
-    const headerRows = [];
-
-    for (let round = 0; round < numRounds; round++) {
-      headerRows.push(
+    const rows = [];
+    for (let r = 0; r < numRounds; r++) {
+      const roundBestOf = config.getRoundBestOf
+        ? config.getRoundBestOf(bracketType, r, numRounds)
+        : config.getBestOf(bracketType);
+      const gameHeaders = [];
+      for (let i = 1; i <= roundBestOf; i++) gameHeaders.push(`Game ${i}`);
+      const headers = [...baseHeaders, 'Score', ...gameHeaders, 'Loss T', ''];
+      rows.push(
         ...headers.map((header) => ({
           userEnteredValue: { stringValue: header },
           userEnteredFormat: {
@@ -267,21 +272,16 @@ class MatchSheetCreator {
         }))
       );
     }
-
     return [
       {
         updateCells: {
           rows: [
             {
-              values: headerRows,
+              values: rows,
             },
           ],
           fields: 'userEnteredValue,userEnteredFormat',
-          start: {
-            sheetId: sheetId,
-            rowIndex: 0,
-            columnIndex: 0,
-          },
+          start: { sheetId, rowIndex: 0, columnIndex: 0 },
         },
       },
     ];
@@ -297,7 +297,7 @@ class MatchSheetCreator {
    * @param {string} configBracketType - Bracket type for config-specific settings
    * @returns {Array} Array of requests
    */
-  createRoundRequests(sheetId, round, startColumn, bracketType, config, configBracketType = null) {
+  createRoundRequests(sheetId, round, startColumn, columnsInRound, bracketType, config) {
     const requests = [];
     let currentRow = 2; // Start at row 2 (after headers)
 
@@ -309,9 +309,9 @@ class MatchSheetCreator {
         sheetId,
         startColumn,
         currentRow,
+        columnsInRound,
         bracketType,
-        config,
-        configBracketType
+        config
       );
       requests.push(...matchRequests);
 
@@ -337,12 +337,12 @@ class MatchSheetCreator {
     sheetId,
     startColumn,
     currentRow,
+    columnsInRound,
     bracketType,
-    config,
-    configBracketType = null
+    config
   ) {
     const requests = [];
-    const columnsPerRound = this.getColumnsPerRound(config, configBracketType);
+    const columnsPerRound = columnsInRound;
 
     // Create the match rows data
     const matchRows = [];
@@ -479,10 +479,7 @@ class MatchSheetCreator {
    */
   async applyMatchSheetFormatting(spreadsheetId, sheetId, matchData, config, bracketType = null) {
     const requests = [];
-    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
-    const bestOfLayout = config.getMaxBestOf
-      ? config.getMaxBestOf(bracketType)
-      : config.getBestOf(bracketType);
+    const startCols = getRoundStartColumns(config, bracketType, matchData.numRounds);
 
     // Define colors using proper hex values converted to RGB decimals
     const lightBlue3 = { red: 0.812, green: 0.886, blue: 0.953 }; // #cfe2f3 (207/255, 226/255, 243/255)
@@ -495,27 +492,18 @@ class MatchSheetCreator {
     const round1 = matchData.rounds[0];
     const maxDataRow = 1 + round1.matches.length * 3; // Header + matches * 3 rows each, includes all match data
 
-    // Define column widths (same approach as bracket renderer)
-    const columnWidths = [
-      46, // Match (A) - updated to 46px
-      35, // Seed (B)
-      130, // Username (C)
-      40, // Score (D)
-    ];
-
-    // Add Game columns (layout maximum)
-    for (let i = 0; i < bestOfLayout; i++) {
-      columnWidths.push(65); // Game columns
-    }
-
-    columnWidths.push(65); // Loss T
-    columnWidths.push(50); // Spacer - updated to 50px
-
-    // 1. Set column widths using the same approach as bracket renderer
+    // 1. Set column widths per round using roundBestOf
     const columnWidthRequests = [];
     for (let round = 0; round < matchData.numRounds; round++) {
-      const startCol = round * columnsPerRound;
-      for (let i = 0; i < columnWidths.length && i < columnsPerRound; i++) {
+      const startCol = startCols[round];
+      const roundBestOf = config.getRoundBestOf
+        ? config.getRoundBestOf(bracketType, round, matchData.numRounds)
+        : config.getBestOf(bracketType);
+      const widths = [46, 35, 130, 40];
+      for (let i = 0; i < roundBestOf; i++) widths.push(65);
+      widths.push(65); // Loss T
+      widths.push(50); // Spacer
+      for (let i = 0; i < widths.length; i++) {
         columnWidthRequests.push({
           updateDimensionProperties: {
             range: {
@@ -524,7 +512,7 @@ class MatchSheetCreator {
               startIndex: startCol + i,
               endIndex: startCol + i + 1,
             },
-            properties: { pixelSize: columnWidths[i] },
+            properties: { pixelSize: widths[i] },
             fields: 'pixelSize',
           },
         });
@@ -539,7 +527,7 @@ class MatchSheetCreator {
     // 2. Add score dropdowns to the SCORE column only for actual match rows
     for (let round = 0; round < matchData.numRounds; round++) {
       const roundData = matchData.rounds[round];
-      const scoreColumnIndex = round * columnsPerRound + 3; // Score is 4th column (index 3)
+      const scoreColumnIndex = startCols[round] + 3; // Score is 4th column within round
 
       // Create dropdown values from per-round maxScore to 0 (reverse sorted)
       const maxScore = config.getRoundMaxScore
@@ -666,16 +654,16 @@ class MatchSheetCreator {
     maxDataRow
   ) {
     const requests = [];
-    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
-    const bestOfLayout = config.getMaxBestOf
-      ? config.getMaxBestOf(bracketType)
-      : config.getBestOf(bracketType);
+    const startCols = getRoundStartColumns(config, bracketType, matchData.numRounds);
 
     for (let round = 0; round < matchData.numRounds; round++) {
-      const startCol = round * columnsPerRound;
+      const startCol = startCols[round];
+      const roundBestOf = config.getRoundBestOf
+        ? config.getRoundBestOf(bracketType, round, matchData.numRounds)
+        : config.getBestOf(bracketType);
       const gameColsStart = startCol + 4; // Game columns start after Match, Seed, Username, Score
-      const gameColsEnd = gameColsStart + bestOfLayout; // Game columns end
-      const lossTCol = startCol + 4 + bestOfLayout; // Loss T column is after Score + Game columns
+      const gameColsEnd = gameColsStart + roundBestOf; // Game columns end
+      const lossTCol = startCol + 4 + roundBestOf; // Loss T column is after Score + Game columns
 
       // Apply to Game columns (Game 1, Game 2, etc.)
       for (let gameCol = gameColsStart; gameCol < gameColsEnd; gameCol++) {
@@ -789,10 +777,6 @@ class MatchSheetCreator {
     lightGrey1,
     black
   ) {
-    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
-    const bestOfLayout = config.getMaxBestOf
-      ? config.getMaxBestOf(bracketType)
-      : config.getBestOf(bracketType);
     const white = { red: 1.0, green: 1.0, blue: 1.0 };
 
     // Calculate data boundaries for each round
@@ -803,8 +787,7 @@ class MatchSheetCreator {
       spreadsheetId,
       sheetId,
       matchData,
-      columnsPerRound,
-      bestOfLayout,
+      config.getMaxBestOf ? config.getMaxBestOf(bracketType) : config.getBestOf(bracketType),
       config,
       bracketType,
       roundDataBoundaries,
@@ -818,7 +801,8 @@ class MatchSheetCreator {
       spreadsheetId,
       sheetId,
       matchData,
-      columnsPerRound,
+      config,
+      bracketType,
       lightGrey1
     );
 
@@ -827,13 +811,21 @@ class MatchSheetCreator {
       spreadsheetId,
       sheetId,
       matchData,
-      columnsPerRound,
+      config,
+      bracketType,
       white,
       maxDataRow
     );
 
     // Pass 4 (last): Apply black backgrounds to rounds with fewer matches
-    await this.applyBlackBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, black);
+    await this.applyBlackBackgrounds(
+      spreadsheetId,
+      sheetId,
+      matchData,
+      config,
+      bracketType,
+      black
+    );
   }
 
   /**
@@ -867,7 +859,6 @@ class MatchSheetCreator {
     spreadsheetId,
     sheetId,
     matchData,
-    columnsPerRound,
     bestOf,
     config,
     bracketType,
@@ -877,23 +868,24 @@ class MatchSheetCreator {
     lightGrey1
   ) {
     const requests = [];
+    const startCols = getRoundStartColumns(config, bracketType, matchData.numRounds);
 
     for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
       const boundary = boundaries[roundIndex];
       if (!boundary.hasData) continue;
 
-      const startCol = roundIndex * columnsPerRound;
+  const startCol = startCols[roundIndex];
       const usernameCol = startCol + 2; // Username column
       const scoreCol = startCol + 3; // Score column
       const gameColsStart = startCol + 4; // Game columns start
-      const gameColsEnd = gameColsStart + bestOf; // Game columns end (layout max)
-      const lossTCol = startCol + 4 + bestOf; // Loss T column
       const seedCol = startCol + 1; // Seed column
 
       // Determine per-round game count (for coloring relevant vs irrelevant)
       const roundBestOf = config.getRoundBestOf
         ? config.getRoundBestOf(bracketType, roundIndex, matchData.numRounds)
         : bestOf;
+      const gameColsEnd = gameColsStart + roundBestOf; // Game columns end (per round)
+      const lossTCol = startCol + 4 + roundBestOf; // Loss T column (per round)
 
       // Apply grey background to all data columns first (Match + Seed columns)
       requests.push({
@@ -963,8 +955,7 @@ class MatchSheetCreator {
         },
       });
 
-      // Apply yellow background to relevant Game columns (per-round bestOf)
-      const relevantEnd = gameColsStart + roundBestOf;
+      // Apply yellow background to Game columns (per-round bestOf)
       requests.push({
         repeatCell: {
           range: {
@@ -972,7 +963,7 @@ class MatchSheetCreator {
             startRowIndex: 1,
             endRowIndex: boundary.lastDataRow,
             startColumnIndex: gameColsStart,
-            endColumnIndex: relevantEnd,
+            endColumnIndex: gameColsEnd,
           },
           cell: {
             userEnteredFormat: { backgroundColor: lightYellow3 },
@@ -980,25 +971,6 @@ class MatchSheetCreator {
           fields: 'userEnteredFormat.backgroundColor',
         },
       });
-
-      // Grey out irrelevant Game columns (beyond per-round bestOf up to layout max)
-      if (relevantEnd < gameColsEnd) {
-        requests.push({
-          repeatCell: {
-            range: {
-              sheetId: sheetId,
-              startRowIndex: 1,
-              endRowIndex: boundary.lastDataRow,
-              startColumnIndex: relevantEnd,
-              endColumnIndex: gameColsEnd,
-            },
-            cell: {
-              userEnteredFormat: { backgroundColor: lightGrey1 },
-            },
-            fields: 'userEnteredFormat.backgroundColor',
-          },
-        });
-      }
 
       // Apply blue background to Loss T column
       requests.push({
@@ -1026,13 +998,22 @@ class MatchSheetCreator {
   /**
    * Apply light grey 1 background to spacer rows (4, 7, 10, 13, etc)
    */
-  async applySpacerRowBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, lightGrey1) {
+  async applySpacerRowBackgrounds(
+    spreadsheetId,
+    sheetId,
+    matchData,
+    config,
+    bracketType,
+    lightGrey1
+  ) {
     const requests = [];
+    const startCols = getRoundStartColumns(config, bracketType, matchData.numRounds);
 
     for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
       const round = matchData.rounds[roundIndex];
-      const startCol = roundIndex * columnsPerRound;
-      const endCol = startCol + columnsPerRound;
+      const startCol = startCols[roundIndex];
+      const endCol =
+        startCol + getRoundTotalCols(config, bracketType, roundIndex, matchData.numRounds);
 
       // Apply light grey 1 to spacer rows (every 3rd row starting from row 4: rows 4, 7, 10, 13, etc)
       // BUT skip the spacer row for the last match in each round
@@ -1077,15 +1058,18 @@ class MatchSheetCreator {
     spreadsheetId,
     sheetId,
     matchData,
-    columnsPerRound,
+    config,
+    bracketType,
     white,
     maxDataRow
   ) {
     const requests = [];
+    const startCols = getRoundStartColumns(config, bracketType, matchData.numRounds);
 
     for (let round = 0; round < matchData.numRounds; round++) {
-      const startCol = round * columnsPerRound;
-      const spacerCol = startCol + columnsPerRound - 1; // Last column in each round is spacer
+      const startCol = startCols[round];
+      const spacerCol =
+        startCol + getRoundTotalCols(config, bracketType, round, matchData.numRounds) - 1; // Last column in each round is spacer
 
       requests.push({
         repeatCell: {
@@ -1115,13 +1099,17 @@ class MatchSheetCreator {
   /**
    * Apply black backgrounds to rounds that have fewer matches than the previous round
    */
-  async applyBlackBackgrounds(spreadsheetId, sheetId, matchData, columnsPerRound, black) {
+  async applyBlackBackgrounds(spreadsheetId, sheetId, matchData, config, bracketType, black) {
     const requests = [];
+    const startCols = getRoundStartColumns(config, bracketType, matchData.numRounds);
 
     // Calculate the final round's Loss T column (end of all data)
     const finalRoundIndex = matchData.numRounds - 1;
-    const finalRoundStartCol = finalRoundIndex * columnsPerRound;
-    const finalRoundLossTCol = finalRoundStartCol + columnsPerRound - 2; // Exclude spacer column
+    const finalRoundStartCol = startCols[finalRoundIndex];
+    const finalRoundBestOf = config.getRoundBestOf
+      ? config.getRoundBestOf(bracketType, finalRoundIndex, matchData.numRounds)
+      : config.getBestOf(bracketType);
+    const finalRoundLossTCol = finalRoundStartCol + 4 + finalRoundBestOf; // Loss T column
 
     // Only apply to rounds after round 1
     for (let roundIndex = 1; roundIndex < matchData.numRounds; roundIndex++) {
@@ -1133,7 +1121,7 @@ class MatchSheetCreator {
         continue;
       }
 
-      const startCol = roundIndex * columnsPerRound;
+  const startCol = startCols[roundIndex];
       // Black extends from current round start ALL THE WAY to the end of final round (Loss T column)
       const endCol = finalRoundLossTCol + 1; // +1 because endColumnIndex is exclusive
 
@@ -1188,7 +1176,7 @@ class MatchSheetCreator {
     bracketType = null
   ) {
     const requests = [];
-    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
+  const startCols = getRoundStartColumns(config, bracketType, matchData.numRounds);
     // maxScore is per-round now when playersRemaining is set
 
     // Process each round to create advancement formulas for the next round
@@ -1215,7 +1203,7 @@ class MatchSheetCreator {
         if (!sourceMatch) continue;
 
         // Calculate source cell positions (updated for new column layout)
-        const sourceStartColumn = roundIndex * columnsPerRound;
+  const sourceStartColumn = startCols[roundIndex];
         const sourceRow1 = 2 + mapping.sourceMatchIndex * 3; // Player 1 row (starts at row 2)
         const sourceRow2 = sourceRow1 + 1; // Player 2 row
         const sourceScoreCol = sourceStartColumn + 3; // Score column (Match=0, Seed=1, Username=2, Score=3)
@@ -1223,7 +1211,7 @@ class MatchSheetCreator {
         const sourceUsernameCol = sourceStartColumn + 2; // Username column
 
         // Calculate destination cell positions
-        const destStartColumn = nextRoundIndex * columnsPerRound;
+  const destStartColumn = startCols[nextRoundIndex];
         const destRow = 2 + mapping.destMatchIndex * 3 + mapping.destPlayerIndex;
         const destSeedCol = destStartColumn + 1;
         const destUsernameCol = destStartColumn + 2;
@@ -1297,10 +1285,7 @@ class MatchSheetCreator {
    */
   async applyLossTFormulas(spreadsheetId, sheetId, matchData, config, bracketType = null) {
     const requests = [];
-    const columnsPerRound = this.getColumnsPerRound(config, bracketType);
-    const bestOfLayout = config.getMaxBestOf
-      ? config.getMaxBestOf(bracketType)
-      : config.getBestOf(bracketType);
+  const startCols = getRoundStartColumns(config, bracketType, matchData.numRounds);
 
     for (let roundIndex = 0; roundIndex < matchData.numRounds; roundIndex++) {
       const round = matchData.rounds[roundIndex];
@@ -1312,13 +1297,16 @@ class MatchSheetCreator {
         if (!match.position1 || !match.position2) continue;
 
         // Calculate cell positions for this match
-        const startColumn = roundIndex * columnsPerRound;
+        const startColumn = startCols[roundIndex];
         const player1Row = 2 + matchIndex * 3; // Player 1 row
         const player2Row = player1Row + 1; // Player 2 row
 
         const scoreCol = startColumn + 3; // Score column
         const gameColsStart = startColumn + 4; // Game columns start
-        const lossTCol = startColumn + 4 + bestOfLayout; // Loss T column
+        const roundBestOf = config.getRoundBestOf
+          ? config.getRoundBestOf(bracketType, roundIndex, matchData.numRounds)
+          : config.getBestOf(bracketType);
+        const lossTCol = startColumn + 4 + roundBestOf; // Loss T column
 
         // Convert to Excel letters
         const scoreColLetter = this.getColumnLetter(scoreCol);
@@ -1332,9 +1320,6 @@ class MatchSheetCreator {
           const currentPlayerGameRefs = [];
           const otherPlayerGameRefs = [];
 
-          const roundBestOf = config.getRoundBestOf
-            ? config.getRoundBestOf(bracketType, roundIndex, matchData.numRounds)
-            : config.getBestOf(bracketType);
           for (let gameIndex = 0; gameIndex < roundBestOf; gameIndex++) {
             const gameColIndex = gameColsStart + gameIndex;
             const gameColLetter = this.getColumnLetter(gameColIndex);
